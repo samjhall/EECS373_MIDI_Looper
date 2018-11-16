@@ -20,6 +20,7 @@ void Global_init() {
 	Timer_init();
 }
 
+
 /***	MIDI (UART1)	***/
 
 void MIDI_init(){ // midi board on APB UART
