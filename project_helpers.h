@@ -13,6 +13,7 @@
 #define BASE 0x40050000
 #define DEFAULT_TIMER_CYCLE_COUNT 50000000 // defaults to a half-second timer
 #define NUM_MEASURES 2
+#define NOTES_PER_MEASURE 8
 UART_instance_t apb_uart;
 
 void Global_init();
@@ -21,6 +22,15 @@ struct channel {
 	uint8_t channelNumber;
 	uint8_t programNumber;
 	uint8_t data[NUM_MEASURES * 8]; // eighth notes
+};
+
+struct Loop_Master { // the "Master" object for the project
+	uint8_t count; // the current count of the "metronome"
+	uint8_t shadow; // should always be what count used to be (if count == 5, shadow should be 4)
+	uint8_t metronome_bound; // when the metronome reaches this bound, it will reset to zero
+	
+	uint8_t keypadBuffer[1];
+	uint32_t distanceBuffer[1];
 };
 
 
@@ -32,8 +42,6 @@ void noteOn(uint8_t channel, uint8_t pitch, uint8_t attack);
 void noteOff(uint8_t channel, uint8_t pitch, uint8_t attack);
 void allNotesOff(); // may need to be used to clear the controller
 					// produces some audible noises but silences everything
-
-
 
 
 /***	APB UART DEVICES	***/
