@@ -12,6 +12,8 @@ struct Loop_Master Loop = {
 		1,
 		0,
 		NUM_MEASURES * NOTES_PER_MEASURE,
+		0,
+		0,
 		{0xBB},
 		{0xFFFFFFFF}
 };
@@ -35,21 +37,41 @@ struct channel channel1 = {
 		}
 };
 
+struct channel* channels[2] = {&channel0, &channel1};
+
+// This will be the main "driver" function as most of the work will be done between interrupts
 void Timer1_IRQHandler() {
-	readKeypad(readBuf);
-	noteOff(0, channel0.data[Loop.shadow], 0);
-	noteOn(0, channel0.data[Loop.count], 50);
+	readKeypad(Loop.keypadBuffer);
+	if((Loop.keypadBuffer[0] == '*') && (Loop.recordingMode == 0)) { // set recordingMode to "on" and restart the metronome
+		Loop.recordingMode = ~Loop.recordingMode;
+		Loop.count = 0;
+		MSS_TIM1_clear_irq();
+		return;
+	}
+
+	if(Loop.recordingMode != 0) {
+		channels[Loop.selectedChannel]->data[Loop.count] = Loop.keypadBuffer[0];
+		//Record(&Loop_Master);
+	}
+	noteOff(0, channels[Loop.selectedChannel]->data[Loop.shadow], 0);
+	noteOn(0, channels[Loop.selectedChannel]->data[Loop.count], 50);
 
 	//noteOff(1, channel1.data[METRONOME_SHADOW], 0);
 	noteOn(1, channel1.data[Loop.count], 50);
 
 
-	uint8_t charBuffer[2] = {32, Loop.count + 48};
-	sendCharDisplay(charBuffer, 2);
+	uint8_t charBuffer[4] = {32, channels[Loop.selectedChannel]->data[Loop.count], Loop.recordingMode, Loop.count + 48};
+	sendCharDisplay(charBuffer, 4);
+
 
 	Loop.shadow = Loop.count;
 	++Loop.count;
 	if(Loop.count >= Loop.metronome_bound) {
+		if(Loop.recordingMode != 0) {
+			Loop.recordingMode = ~Loop.recordingMode;
+		}
+
+		clearCharDisplay();
 		Loop.count = 0;
 	}
 	MSS_TIM1_clear_irq();
@@ -60,7 +82,9 @@ void test_library() {
 
 	allNotesOff();
 
-	Timer_set_and_start(25000000); // half-second or 120 BPM
+	clearCharDisplay();
+
+	Timer_set_and_start(25000000); // 1 second = 100 000 000
 	programChange(0, 49);
 	while(1) {
 

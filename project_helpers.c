@@ -63,6 +63,16 @@ void sendCharDisplay(uint8_t* buffer, uint8_t size) {
 }
 
 
+void clearCharDisplay() {
+	// 4 x 20 display
+	// This uses control commands defined in the screen's datasheet
+	uint8_t clearBuffer[2] = {0xFE, 0x01};
+	sendCharDisplay(clearBuffer, 2);
+	clearBuffer[2] = 0x80;
+	sendCharDisplay(clearBuffer, 2);
+}
+
+
 
 /***	TIMER	***/
 
