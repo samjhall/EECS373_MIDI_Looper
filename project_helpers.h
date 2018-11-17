@@ -62,6 +62,7 @@ void clearCharDisplay(); // clears the entire display
 
 
 /***	DISTANCE SENSOR	***/
+uint8_t readSensor(); // should read the raw data from the APB and convert it into some useful unit
 
 /***	TOUCHSCREEN		***/
 
