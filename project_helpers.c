@@ -20,6 +20,34 @@ void Global_init() {
 	Timer_init();
 }
 
+void Update_metronome(struct Loop_Master* loopIn) {
+	loopIn->shadow = loopIn->count;
+	++loopIn->count;
+	if(loopIn->count >= loopIn->metronome_bound) {
+		if(loopIn->recordingMode != 0) {
+			loopIn->recordingMode = ~loopIn->recordingMode;
+		}
+		
+		clearCharDisplay();
+		loopIn->count = 0;
+	}
+}
+
+void Cycle_channels(struct channel* channelPtrs[16], struct Loop_Master* loopIn) {
+	int i = 0;
+	while (i < 16) {
+		if(channelPtrs[i]->data[loopIn->count] != 0xFF) {
+			noteOff(channelPtrs[i], channelPtrs[i]->lastPlayed, 0);
+			noteOn(channelPtrs[i], channelPtrs[i]->data[loopIn->count], 40);
+		}
+		else {//if(channels[i]->data[Loop.count] == 0){
+			noteOff(channelPtrs[i], channelPtrs[i]->lastPlayed, 0);
+		}
+		++i;
+	}
+	return;
+}
+
 
 /***	MIDI (UART1)	***/
 
@@ -27,24 +55,26 @@ void MIDI_init(){ // midi board on APB UART
 	MSS_UART_init(&g_mss_uart1, 31250, MSS_UART_DATA_8_BITS | MSS_UART_NO_PARITY | MSS_UART_ONE_STOP_BIT );
 }
 
-void programChange(uint8_t channel, uint8_t program) {
-	uint8_t buffer[2] = {0xC0 | channel, program};
+void programChange(struct channel* ch, uint8_t program) {
+	uint8_t buffer[2] = {0xC0 | ch->channelNumber, program};
 	MSS_UART_polled_tx(&g_mss_uart1, buffer, 2);
+	ch->programNumber = program;
 }
 
-void noteOn(uint8_t channel, uint8_t pitch, uint8_t attack) {
-	uint8_t buffer[3] = {0x90 | channel, pitch, attack};
+void noteOn(struct channel* ch, uint8_t pitch, uint8_t attack) {
+	uint8_t buffer[3] = {0x90 | ch->channelNumber, pitch, attack};
 	MSS_UART_polled_tx(&g_mss_uart1, buffer, 3);
+	ch->lastPlayed = pitch;
 }
 
-void noteOff(uint8_t channel, uint8_t pitch, uint8_t attack) {
-	uint8_t buffer[3] = {0xC0 | channel, pitch, attack};
+void noteOff(struct channel* ch, uint8_t pitch, uint8_t attack) {
+	uint8_t buffer[3] = {0x80 | ch->channelNumber, pitch, attack};
 	MSS_UART_polled_tx(&g_mss_uart1, buffer, 3);
 }
 
 void allNotesOff() {
-	uint8_t clearMIDI[1] = {123};
-	MSS_UART_polled_tx(&g_mss_uart1, clearMIDI, 1);
+	uint8_t clearMIDI[3] = {0xB0, 123, 0};
+	MSS_UART_polled_tx(&g_mss_uart1, clearMIDI, 3);
 }
 
 

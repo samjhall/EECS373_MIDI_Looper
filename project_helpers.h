@@ -21,6 +21,7 @@ void Global_init(); // calls every device's initializer
 struct channel {
 	uint8_t channelNumber;
 	uint8_t programNumber;
+	uint8_t lastPlayed;
 	uint8_t data[NUM_MEASURES * 8]; // eighth notes
 };
 
@@ -34,22 +35,27 @@ struct Loop_Master { // the "Master" object for the project
 	
 	uint8_t keypadBuffer[1];
 	uint32_t distanceBuffer[1];
+	//struct channel* channelPtrs[16];
 	//uint8_t recordingBuffer[NUM_MEASURES * 8];
 };
 
+void Update_metronome(struct Loop_Master* loopIn);
+void Cycle_channels(struct channel* channelPtrs[16], struct Loop_Master* loopIn);
+
+//void Channel_init(struct channel* channelPtrs, uint8_t numChannels);
 
 /***	MIDI (UART1)	***/
 
 /* MIDI board is controlled by the SmartFusion's UART1 at 31250 baud */
 
 void MIDI_init(); // midi board on APB UART
-void programChange(uint8_t channel, uint8_t program);
-void noteOn(uint8_t channel, uint8_t pitch, uint8_t attack);
-void noteOff(uint8_t channel, uint8_t pitch, uint8_t attack);
+void programChange(struct channel* ch, uint8_t program);
+void noteOn(struct channel* ch, uint8_t pitch, uint8_t attack);
+void noteOff(struct channel* ch, uint8_t pitch, uint8_t attack);
 void allNotesOff(); // may need to be used to clear the controller
 					// produces some audible noises but silences everything
-
-
+					
+					
 /***	APB UART DEVICES	***/
 
 /* The keypad and character display are controlled by an APB UART at 9600 baud */

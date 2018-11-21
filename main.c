@@ -8,6 +8,7 @@
 // for 100 MHz at 9600 baud, this is 650 in decimal
 
 
+
 struct Loop_Master Loop = {
 		1,
 		0,
@@ -15,34 +16,84 @@ struct Loop_Master Loop = {
 		0,
 		0,
 		{0xBB},
-		{0xFFFFFFFF}
+		{0xFFFFFFFF},
 };
+
+// EMPTY CHANNEL
+/*
+struct channel channelN = {
+		1, 36, 0, {-1, -1, -1, -1,		-1, -1, -1, -1,			-1, -1, -1, -1,			-1, -1, -1, -1,}};
+ */
 
 struct channel channel0 = {
 		0, // channel number
 		28, // program number
-		{60, 62, 64, 65,
-				67, 69, 71, 72,
-				74, 76, 77, 79,
-				81, 83, 84, 84
-		}
-};
-struct channel channel1 = {
-		1,
-		36,
-		{36, 0, 36, 0,
-				36, 0, 36, 0,
-				36, 0, 36, 0,
-				36, 0, 36, 0,
-		}
-};
+		0, // lastPlayed
+			   //{60, 62, 64, 65,		67, 69, 71, 72,		74, 76, 77, 79,		81, 83, 84, 84}};
+			   {60, -1, -1, -1,		-1, -1, -1, -1,			-1, -1, -1, -1,			-1, -1, -1, -1,}};
 
-struct channel* channels[2] = {&channel0, &channel1};
+struct channel channel1 = {
+		1, 36, 0, {-1, 61, -1, -1,		-1, -1, -1, -1,			-1, -1, -1, -1,			-1, -1, -1, -1,}};
+
+struct channel channel2 = {
+		2, 111, 0, {-1, -1, 62, -1,		-1, -1, -1, -1,			-1, -1, -1, -1,			-1, -1, -1, -1,}};
+
+struct channel channel3 = {
+		3, 36, 0, {-1, -1, -1, 63,		-1, -1, -1, -1,			-1, -1, -1, -1,			-1, -1, -1, -1,}};
+
+struct channel channel4 = {
+		4, 2, 0, {-1, -1, 48, -1,		48, -1, -1, -1,			-1, -1, 48, -1,			48, -1, -1, -1,}};
+
+struct channel channel5 = {
+		5, 105, 0, {60, -1, -1, -1,		60, -1, -1, -1,		60, -1, -1, -1,		60, -1, -1, -1,}};
+
+struct channel channel6 = {
+		6, 105, 0, {-1, 60, -1, -1,		-1, 60, -1, -1,		-1, 60, -1, -1,		-1, 60, -1, -1,}};
+
+struct channel channel7 = {
+		7, 105, 0, {-1, -1, 60, -1,		-1, -1, 60, -1,		-1, -1, 60, -1,		-1, -1, 60, -1,}};
+
+struct channel channel8 = {
+		8, 105, 0, {-1, -1, -1, 60,		-1, -1, -1, 60,		-1, -1, -1, 60,		-1, -1, -1,  60,}};
+
+struct channel channel9 = {
+		9, 36, 0, {36, 42, 36, 42,		36, 42, 36, 42,		36, 42, 36, 42,		36, 42, 36, 42,}};
+
+struct channel channel10 = {
+		1, 36, 0, {-1, -1, -1, -1,		-1, -1, -1, -1,			-1, -1, -1, -1,			-1, -1, -1, -1,}};
+
+struct channel channel11 = {
+		1, 36, 0, {-1, -1, -1, -1,		-1, -1, -1, -1,			-1, -1, -1, -1,			-1, -1, -1, -1,}};
+
+struct channel channel12 = {
+		1, 36, 0, {-1, -1, -1, -1,		-1, -1, -1, -1,			-1, -1, -1, -1,			-1, -1, -1, -1,}};
+
+struct channel channel13 = {
+		1, 36, 0, {-1, -1, -1, -1,		-1, -1, -1, -1,			-1, -1, -1, -1,			-1, -1, -1, -1,}};
+
+struct channel channel14 = {
+		1, 36, 0, {-1, -1, -1, -1,		-1, -1, -1, -1,			-1, -1, -1, -1,			-1, -1, -1, -1,}};
+
+struct channel channel15 = {
+		1, 36, 0, {-1, -1, -1, -1,		-1, -1, -1, -1,			-1, -1, -1, -1,			-1, -1, -1, -1,}};
+
+
+struct channel* channels[16] = {&channel0, &channel1, &channel2, &channel3,
+								&channel4, &channel5, &channel6, &channel7,
+								&channel8, &channel9, &channel10, &channel11,
+								&channel12, &channel13, &channel14, &channel15,};
 
 // This will be the main "driver" function as most of the work will be done between interrupts
 void Timer1_IRQHandler() {
 	readKeypad(Loop.keypadBuffer);
-	if((Loop.keypadBuffer[0] == '*') && (Loop.recordingMode == 0)) { // set recordingMode to "on" and restart the metronome
+	Loop.selectedChannel = Loop.keypadBuffer[0];
+
+
+	// RECORDING DEMO
+
+	// DO NOT DELETE
+
+	/*if((Loop.keypadBuffer[0] == '*') && (Loop.recordingMode == 0)) { // set recordingMode to "on" and restart the metronome
 		Loop.recordingMode = ~Loop.recordingMode;
 		Loop.count = 0;
 		MSS_TIM1_clear_irq();
@@ -51,29 +102,17 @@ void Timer1_IRQHandler() {
 
 	if(Loop.recordingMode != 0) {
 		channels[Loop.selectedChannel]->data[Loop.count] = Loop.keypadBuffer[0];
-		//Record(&Loop_Master);
-	}
-	noteOff(0, channels[Loop.selectedChannel]->data[Loop.shadow], 0);
-	noteOn(0, channels[Loop.selectedChannel]->data[Loop.count], 50);
+	}*/
 
-	//noteOff(1, channel1.data[METRONOME_SHADOW], 0);
-	noteOn(1, channel1.data[Loop.count], 50);
+	// DO NOT DELETE ABOVE
 
+	Cycle_channels(channels, &Loop);
 
-	uint8_t charBuffer[4] = {32, channels[Loop.selectedChannel]->data[Loop.count], Loop.recordingMode, Loop.count + 48};
-	sendCharDisplay(charBuffer, 4);
+	//uint8_t charBuffer[4] = {32, channels[Loop.selectedChannel]->data[Loop.count], Loop.recordingMode, Loop.count + 48};
+	uint8_t charBuffer[2] = {32, Loop.selectedChannel};
+	sendCharDisplay(charBuffer, sizeof(charBuffer));
 
-
-	Loop.shadow = Loop.count;
-	++Loop.count;
-	if(Loop.count >= Loop.metronome_bound) {
-		if(Loop.recordingMode != 0) {
-			Loop.recordingMode = ~Loop.recordingMode;
-		}
-
-		clearCharDisplay();
-		Loop.count = 0;
-	}
+	Update_metronome(&Loop);
 	MSS_TIM1_clear_irq();
 }
 
@@ -84,8 +123,14 @@ void test_library() {
 
 	clearCharDisplay();
 
+	programChange(channels[0], 127);
+	//programChange(1, 36);
+	//programChange(2, 42);
+	//programChange(3, 81);
+	//programChange(9, 37);
+
 	Timer_set_and_start(25000000); // 1 second = 100 000 000
-	programChange(0, 49);
+
 	while(1) {
 
 	}
