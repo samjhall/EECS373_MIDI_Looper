@@ -87,14 +87,14 @@ struct channel* channels[16] = {&channel0, &channel1, &channel2, &channel3,
 // This will be the main "driver" function as most of the work will be done between interrupts
 void Timer1_IRQHandler() {
 	readKeypad(Loop.keypadBuffer);
-	Loop.selectedChannel = Loop.keypadBuffer[0];
-
+	//Loop.selectedChannel = Loop.keypadBuffer[0];
+	Loop.selectedChannel = 4;
 
 	// RECORDING DEMO
 
 	// DO NOT DELETE
 
-	/*if((Loop.keypadBuffer[0] == '*') && (Loop.recordingMode == 0)) { // set recordingMode to "on" and restart the metronome
+	if((Loop.keypadBuffer[0] == '*') && (Loop.recordingMode == 0)) { // set recordingMode to "on" and restart the metronome
 		Loop.recordingMode = ~Loop.recordingMode;
 		Loop.count = 0;
 		MSS_TIM1_clear_irq();
@@ -102,15 +102,17 @@ void Timer1_IRQHandler() {
 	}
 
 	if(Loop.recordingMode != 0) {
-		channels[Loop.selectedChannel]->data[Loop.count] = Loop.keypadBuffer[0];
-	}*/
+		//channels[Loop.selectedChannel]->data[Loop.count] = Loop.keypadBuffer[0];
+		channels[Loop.selectedChannel]->data[Loop.count] = readSensor() + 24;
+	}
+
 
 	// DO NOT DELETE ABOVE
 
 	Cycle_channels(channels, &Loop);
 
 	//uint8_t charBuffer[4] = {32, channels[Loop.selectedChannel]->data[Loop.count], Loop.recordingMode, Loop.count + 48};
-	uint8_t charBuffer[2] = {32, Loop.selectedChannel};
+	uint8_t charBuffer[2] = {32, Loop.keypadBuffer[0], 32, Loop.selectedChannel+48};
 	sendCharDisplay(charBuffer, sizeof(charBuffer));
 
 	Update_metronome(&Loop);
@@ -134,13 +136,15 @@ void test_library() {
 
 	while(1) {
 		parseTouch();
+		printf("\tDistance (cm): %d\n\r", readSensor());
+		//readSensor();
 	}
 }
 
 
 int main()
 {
-	printf("test\n");
+	printf("test\n"); // test UART0
 	test_library();
 	while(1) { }
 }

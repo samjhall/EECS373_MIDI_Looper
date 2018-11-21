@@ -22,7 +22,9 @@
 #define DEFAULT_TIMER_CYCLE_COUNT 50000000 // defaults to a half-second timer
 #define NUM_MEASURES 2
 #define NOTES_PER_MEASURE 8
-#define ACE_SAMPLE_SIZE 5 // number of consecutive readings of X/Y to get from touchscreen
+#define ACE_SAMPLE_SIZE 50 // number of consecutive readings of X/Y to get from touchscreen
+#define DISTANCE_SENSOR_ADDRESS 0x40050100
+
 UART_instance_t apb_uart;
 ace_channel_handle_t adc_handler4;//  X AXIS
 ace_channel_handle_t adc_handler5; // Y AXIS
@@ -79,7 +81,7 @@ void clearCharDisplay(); // clears the entire display
 
 
 /***	DISTANCE SENSOR	***/
-uint8_t readSensor(); // should read the raw data from the APB and convert it into some useful unit
+uint32_t readSensor(); // should read the raw data from the APB and convert it into centimeters
 
 /***	TOUCHSCREEN		***/
 void Touchscreen_init();

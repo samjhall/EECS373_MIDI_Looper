@@ -130,6 +130,15 @@ void Timer_set_and_start(uint32_t cycle_count) {
  * MSS_TIM1_clear_irq();
  */
 
+/***	DISTANCE SENSOR	***/
+uint32_t readSensor() {
+	volatile uint32_t* read = (uint32_t*)(DISTANCE_SENSOR_ADDRESS);
+	//printf("\tDistance (cm): %x\n\r", *read);
+
+	return ((*read) / (58 * 100));
+}
+
+
 
 /***	TOUCHSCREEN		***/
 void Touchscreen_init() {
@@ -170,8 +179,8 @@ uint8_t parseTouch() {
 	volatile uint16_t x = 0;
 	volatile uint16_t y = 0;
 
-	while(alternator < 100) {
-		if(alternator<50){
+	while(alternator < 2*ACE_SAMPLE_SIZE) {
+		if(alternator<ACE_SAMPLE_SIZE){
 			y = getY(adc_handler5);
 		}
 		else{
@@ -180,7 +189,14 @@ uint8_t parseTouch() {
 		alternator++;
 	}
 
-	printf("X: %d   Y: %d\n\r", x, y);
+	//printf("X: %d   Y: %d\n\r", x, y);
+
+	/*
+	 *
+	 * ADD BUTTON PARSING LOGIC HERE
+	 *
+	 */
+
 
 	return 0;
 }
