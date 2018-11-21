@@ -11,8 +11,10 @@
 #include "drivers/mss_uart/mss_uart.h"
 #include "drivers/CoreUARTapb/core_uart_apb.h"
 #include "drivers/mss_timer/mss_timer.h"
-#include "project_helpers.h"
+#include "drivers/mss_gpio/mss_gpio.h"
+#include "drivers/mss_ace/mss_ace.h"
 #include <stdint.h>
+#include <stdio.h>
 
 
 /***	GLOBAL	***/
@@ -22,6 +24,8 @@
 #define NOTES_PER_MEASURE 8
 #define ACE_SAMPLE_SIZE 5 // number of consecutive readings of X/Y to get from touchscreen
 UART_instance_t apb_uart;
+ace_channel_handle_t adc_handler4;//  X AXIS
+ace_channel_handle_t adc_handler5; // Y AXIS
 
 void Global_init(); // calls every device's initializer
 
@@ -78,11 +82,12 @@ void clearCharDisplay(); // clears the entire display
 uint8_t readSensor(); // should read the raw data from the APB and convert it into some useful unit
 
 /***	TOUCHSCREEN		***/
-//void Touchscreen_init();
-//uint16_t getX(ace_channel_handle_t adc_handler);
-//uint16_t getY(ace_channel_handle_t adc_handler);
-//uint8_t parseTouch(ace_channel_handle_t adc_handler); // should get X and Y and check for press
-													  // returns button that was pressed or FF if no press
+void Touchscreen_init();
+uint16_t getX();
+uint16_t getY();
+uint8_t parseTouch();
+		// should get X and Y and check for press
+		// returns button that was pressed or FF if no press
 
 /***	GRAPHICS DISPLAY	***/
 

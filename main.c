@@ -133,14 +133,14 @@ void test_library() {
 	Timer_set_and_start(25000000); // 1 second = 100 000 000
 
 	while(1) {
-
+		parseTouch();
 	}
 }
 
 
 int main()
 {
-
+	printf("test\n");
 	test_library();
 	while(1) { }
 }

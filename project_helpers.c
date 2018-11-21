@@ -18,6 +18,7 @@ void Global_init() {
 	MIDI_init();
 	APB_UART_init();
 	Timer_init();
+	Touchscreen_init();
 }
 
 void Update_metronome(struct Loop_Master* loopIn) {
@@ -128,3 +129,58 @@ void Timer_set_and_start(uint32_t cycle_count) {
  * MSS_TIM1_start();
  * MSS_TIM1_clear_irq();
  */
+
+
+/***	TOUCHSCREEN		***/
+void Touchscreen_init() {
+	ACE_init();
+	MSS_GPIO_config( MSS_GPIO_0, MSS_GPIO_INOUT_MODE );
+	MSS_GPIO_config( MSS_GPIO_1, MSS_GPIO_INOUT_MODE );
+	MSS_GPIO_config( MSS_GPIO_2, MSS_GPIO_INOUT_MODE );
+	MSS_GPIO_config( MSS_GPIO_3, MSS_GPIO_INOUT_MODE );
+	adc_handler4 = ACE_get_channel_handle((const uint8_t *)"ADCDirectInput_4");
+	adc_handler5 = ACE_get_channel_handle((const uint8_t *)"ADCDirectInput_5");
+}
+uint16_t getX() {
+	//Set Xri and Xle as 0 and 5 volts and then set other two as highz(read from adc 4 which is connected to Yhi)
+	MSS_GPIO_drive_inout( MSS_GPIO_0, MSS_GPIO_HIGH_Z );
+	MSS_GPIO_drive_inout( MSS_GPIO_1, MSS_GPIO_HIGH_Z );
+	MSS_GPIO_drive_inout( MSS_GPIO_2, MSS_GPIO_DRIVE_HIGH );
+	MSS_GPIO_drive_inout( MSS_GPIO_3, MSS_GPIO_DRIVE_LOW );
+
+	//Read Y2 as the output from ADC3
+	uint16_t adc_data = ACE_get_ppe_sample(adc_handler4);
+	return adc_data;
+}
+uint16_t getY() {
+	//Set Ylo and Yhi to be 0 and 5 volts then set other two as highz(read from adc 5 which is connected to Xle).
+	MSS_GPIO_drive_inout( MSS_GPIO_2, MSS_GPIO_HIGH_Z );
+	MSS_GPIO_drive_inout( MSS_GPIO_3, MSS_GPIO_HIGH_Z );
+	MSS_GPIO_drive_inout( MSS_GPIO_0, MSS_GPIO_DRIVE_HIGH );
+	MSS_GPIO_drive_inout( MSS_GPIO_1, MSS_GPIO_DRIVE_LOW );
+	//Set y1(GPIO3) to high and y2(GPIO1) to low
+
+
+	//Read from adc at x1 or GPIO0
+	uint16_t adc_data = ACE_get_ppe_sample(adc_handler5);
+	return adc_data;
+}
+uint8_t parseTouch() {
+	uint16_t alternator = 0;
+	volatile uint16_t x = 0;
+	volatile uint16_t y = 0;
+
+	while(alternator < 100) {
+		if(alternator<50){
+			y = getY(adc_handler5);
+		}
+		else{
+			x = getX(adc_handler4);
+		}
+		alternator++;
+	}
+
+	printf("X: %d   Y: %d\n\r", x, y);
+
+	return 0;
+}
