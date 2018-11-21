@@ -5,11 +5,11 @@
  *      Author: samjhall
  */
 
-#include "drivers/mss_uart/mss_uart.h"
-#include "drivers/CoreUARTapb/core_uart_apb.h"
-#include "drivers/mss_timer/mss_timer.h"
+//#include "drivers/mss_uart/mss_uart.h"
+//#include "drivers/CoreUARTapb/core_uart_apb.h"
+//#include "drivers/mss_timer/mss_timer.h"
 #include "project_helpers.h"
-#include <stdint.h>
+//#include <stdint.h>
 
 /***	GLOBAL	***/
 UART_instance_t apb_uart;

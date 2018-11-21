@@ -8,12 +8,19 @@
 #ifndef PROJECT_HELPERS_H_
 #define PROJECT_HELPERS_H_
 
+#include "drivers/mss_uart/mss_uart.h"
+#include "drivers/CoreUARTapb/core_uart_apb.h"
+#include "drivers/mss_timer/mss_timer.h"
+#include "project_helpers.h"
+#include <stdint.h>
+
 
 /***	GLOBAL	***/
 #define BASE 0x40050000
 #define DEFAULT_TIMER_CYCLE_COUNT 50000000 // defaults to a half-second timer
 #define NUM_MEASURES 2
 #define NOTES_PER_MEASURE 8
+#define ACE_SAMPLE_SIZE 5 // number of consecutive readings of X/Y to get from touchscreen
 UART_instance_t apb_uart;
 
 void Global_init(); // calls every device's initializer
@@ -71,6 +78,11 @@ void clearCharDisplay(); // clears the entire display
 uint8_t readSensor(); // should read the raw data from the APB and convert it into some useful unit
 
 /***	TOUCHSCREEN		***/
+//void Touchscreen_init();
+//uint16_t getX(ace_channel_handle_t adc_handler);
+//uint16_t getY(ace_channel_handle_t adc_handler);
+//uint8_t parseTouch(ace_channel_handle_t adc_handler); // should get X and Y and check for press
+													  // returns button that was pressed or FF if no press
 
 /***	GRAPHICS DISPLAY	***/
 
