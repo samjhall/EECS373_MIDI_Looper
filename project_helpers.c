@@ -19,6 +19,7 @@ void Global_init() {
 	APB_UART_init();
 	Timer_init();
 	Touchscreen_init();
+	Buttons_init();
 }
 
 void Update_metronome(struct Loop_Master* loopIn) {
@@ -189,7 +190,7 @@ uint8_t parseTouch() {
 		alternator++;
 	}
 
-	//printf("X: %d   Y: %d\n\r", x, y);
+	printf("X: %d   Y: %d\n\r", x, y);
 
 	/*
 	 *
@@ -199,4 +200,21 @@ uint8_t parseTouch() {
 
 
 	return 0;
+}
+
+
+
+/***	BUTTONS 	***/
+void Buttons_init() {
+	MSS_GPIO_config( MSS_GPIO_10, MSS_GPIO_INPUT_MODE );
+	MSS_GPIO_config( MSS_GPIO_11, MSS_GPIO_INPUT_MODE );
+	MSS_GPIO_config( MSS_GPIO_12, MSS_GPIO_INPUT_MODE );
+	MSS_GPIO_config( MSS_GPIO_13, MSS_GPIO_INPUT_MODE );
+}
+uint8_t readButtons() {
+	// PLAY/PAUSE GPIO 10
+	// CLEAR CHANNEL GPIO 11
+	// CLEAR ALL GPIO 12
+	// RECORD GPIO 13
+	return (uint8_t)(0x0000000F & (MSS_GPIO_get_inputs() >> 10));
 }

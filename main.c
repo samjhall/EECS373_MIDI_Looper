@@ -16,15 +16,16 @@ struct Loop_Master Loop = {
 		NUM_MEASURES * NOTES_PER_MEASURE,
 		0,
 		0,
+		{0x00},
 		{0xBB},
 		{0xFFFFFFFF},
 };
 
 // EMPTY CHANNEL
-/*
-struct channel channelN = {
+
+struct channel EMPTY_CHANNEL = {
 		1, 36, 0, {-1, -1, -1, -1,		-1, -1, -1, -1,			-1, -1, -1, -1,			-1, -1, -1, -1,}};
- */
+
 
 struct channel channel0 = {
 		0, // channel number
@@ -84,22 +85,48 @@ struct channel* channels[16] = {&channel0, &channel1, &channel2, &channel3,
 								&channel8, &channel9, &channel10, &channel11,
 								&channel12, &channel13, &channel14, &channel15,};
 
+uint8_t GLOBAL_PAUSE_FLAG = 0;
+
 // This will be the main "driver" function as most of the work will be done between interrupts
 void Timer1_IRQHandler() {
-	readKeypad(Loop.keypadBuffer);
-	//Loop.selectedChannel = Loop.keypadBuffer[0];
-	Loop.selectedChannel = 4;
-
-	// RECORDING DEMO
-
-	// DO NOT DELETE
-
-	if((Loop.keypadBuffer[0] == '*') && (Loop.recordingMode == 0)) { // set recordingMode to "on" and restart the metronome
+	if(Loop.buttonsBuffer[0] & 0x01) {
+		GLOBAL_PAUSE_FLAG = ~GLOBAL_PAUSE_FLAG;
+	}
+	if(Loop.buttonsBuffer[0] & 0x02) {
+		int i = 0;
+		while(i < NUM_MEASURES * 8) {
+			channels[Loop.selectedChannel]->data[i] = EMPTY_CHANNEL.data[i];
+			++i;
+		}
+	}
+	if(Loop.buttonsBuffer[0] & 0x04) { // DOESNT CLEAR
+		int i = 0;
+		int j = 0;
+		while (i < 16) {
+			while(j < NUM_MEASURES * 8) {
+				(channels[i]->data)[j] = EMPTY_CHANNEL.data[0];
+				++j;
+			}
+			++i;
+		}
+		allNotesOff();
+	}
+	if((Loop.buttonsBuffer[0] & 0x08) && (Loop.recordingMode == 0)) { // set recordingMode to "on" and restart the metronome
 		Loop.recordingMode = ~Loop.recordingMode;
 		Loop.count = 0;
 		MSS_TIM1_clear_irq();
 		return;
 	}
+
+	if(GLOBAL_PAUSE_FLAG != 0) {
+		MSS_TIM1_clear_irq();
+		return;
+	}
+
+	parseTouch();
+	readKeypad(Loop.keypadBuffer);
+	//Loop.selectedChannel = Loop.keypadBuffer[0];
+	Loop.selectedChannel = 4;
 
 	if(Loop.recordingMode != 0) {
 		//channels[Loop.selectedChannel]->data[Loop.count] = Loop.keypadBuffer[0];
@@ -112,7 +139,7 @@ void Timer1_IRQHandler() {
 	Cycle_channels(channels, &Loop);
 
 	//uint8_t charBuffer[4] = {32, channels[Loop.selectedChannel]->data[Loop.count], Loop.recordingMode, Loop.count + 48};
-	uint8_t charBuffer[2] = {32, Loop.keypadBuffer[0], 32, Loop.selectedChannel+48};
+	uint8_t charBuffer[4] = {32, Loop.keypadBuffer[0], 32, Loop.selectedChannel+48};
 	sendCharDisplay(charBuffer, sizeof(charBuffer));
 
 	Update_metronome(&Loop);
@@ -127,17 +154,14 @@ void test_library() {
 	clearCharDisplay();
 
 	programChange(channels[0], 127);
-	//programChange(1, 36);
-	//programChange(2, 42);
-	//programChange(3, 81);
-	//programChange(9, 37);
 
 	Timer_set_and_start(25000000); // 1 second = 100 000 000
 
 	while(1) {
-		parseTouch();
-		printf("\tDistance (cm): %d\n\r", readSensor());
-		//readSensor();
+		//parseTouch();
+		Loop.buttonsBuffer[0] = readButtons();
+		printf("\tDistance (cm): %d\n\r", (int)readSensor());
+
 	}
 }
 

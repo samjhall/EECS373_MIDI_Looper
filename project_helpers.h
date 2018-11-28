@@ -46,6 +46,7 @@ struct Loop_Master { // the "Master" object for the project
 	uint8_t selectedChannel;
 	uint8_t recordingMode; // should be FF if in recording mode, 0 else
 	
+	uint8_t buttonsBuffer[1];
 	uint8_t keypadBuffer[1];
 	uint32_t distanceBuffer[1];
 	//struct channel* channelPtrs[16];
@@ -53,7 +54,7 @@ struct Loop_Master { // the "Master" object for the project
 };
 
 void Update_metronome(struct Loop_Master* loopIn);
-void Cycle_channels(struct channel* channelPtrs[16], struct Loop_Master* loopIn);
+void Cycle_channels(struct channel* channelPtrs[NUM_MEASURES * 8], struct Loop_Master* loopIn);
 
 //void Channel_init(struct channel* channelPtrs, uint8_t numChannels);
 
@@ -90,6 +91,9 @@ uint16_t getY();
 uint8_t parseTouch();
 		// should get X and Y and check for press
 		// returns button that was pressed or FF if no press
+//void TSDEBUG_testTouch(); // used for debugging
+//void TSDEBUG_addNewVal(uint16_t* old, uint16_t newVal);
+//void TSDEBUG_checkPress(uint16_t* value);
 
 /***	GRAPHICS DISPLAY	***/
 
@@ -107,6 +111,15 @@ void Timer_set_and_start(uint32_t cycle_count);
  * MSS_TIM1_clear_irq();
  */
 
+
+/***	BUTTONS 	***/
+
+// PLAY/PAUSE GPIO 10
+// CLEAR CHANNEL GPIO 11
+// CLEAR ALL GPIO 12
+// RECORD GPIO 13
+void Buttons_init();
+uint8_t readButtons();
 
 
 #endif /* PROJECT_HELPERS_H_ */
