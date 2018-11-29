@@ -202,7 +202,7 @@ int checkPress(uint16_t* value) {
 }
 */
 
-uint8_t parseTouch() {
+void parseTouch(struct Loop_Master* loopIn) {
 
 	volatile uint16_t x = 0;
 	volatile uint16_t y = 0;
@@ -216,17 +216,15 @@ uint8_t parseTouch() {
 		if(i<ACE_SAMPLE_SIZE){
 			x = getX(adc_handler4);
 		}
-		//printf("X: %d  \n\r", x);
 		else{
 			y = getY(adc_handler5);
 		}
-		//printf("Y: %d  \n\r", y);
-
-		printf("Y: %d  X: %d\n\r", y, x);
 		++i;
 		++j;
 	}
-	return 0;
+	//printf("Y: %d  X: %d\n\r", y, x);
+	loopIn->touchscreenBuffer[0] = x;
+	loopIn->touchscreenBuffer[1] = y;
 }
 
 

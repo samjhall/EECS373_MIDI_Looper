@@ -49,6 +49,7 @@ struct Loop_Master { // the "Master" object for the project
 	uint8_t buttonsBuffer[1];
 	uint8_t keypadBuffer[1];
 	uint32_t distanceBuffer[1];
+	uint32_t touchscreenBuffer[2];
 	//struct channel* channelPtrs[16];
 	//uint8_t recordingBuffer[NUM_MEASURES * 8];
 };
@@ -90,7 +91,7 @@ uint16_t getX();
 uint16_t getY();
 void addNewVal(uint16_t* old, uint16_t newVal);
 int checkPress(uint16_t* value);
-uint8_t parseTouch();
+void parseTouch(struct Loop_Master* loopIn);
 		// should get X and Y and check for press
 		// returns button that was pressed or FF if no press
 //void TSDEBUG_testTouch(); // used for debugging

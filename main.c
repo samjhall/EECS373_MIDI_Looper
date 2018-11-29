@@ -19,6 +19,7 @@ struct Loop_Master Loop = {
 		{0x00},
 		{0xBB},
 		{0xFFFFFFFF},
+		{0, 0}
 };
 
 // EMPTY CHANNEL
@@ -158,8 +159,16 @@ void test_library() {
 	Timer_set_and_start(25000000); // 1 second = 100 000 000
 
 	while(1) {
-		parseTouch();
+		parseTouch(&Loop);
 		Loop.buttonsBuffer[0] = readButtons();
+		int x =Loop.touchscreenBuffer[0];
+		int y =Loop.touchscreenBuffer[1];
+		if((x > 1800 || x < 1650) && (y < 1550 || y > 1700)){
+			printf("X = %d  and Y = %d\n\r", x, y);
+		}
+		else{
+			printf("No Touch\n\r");
+		}
 		//printf("\tDistance (cm): %d\n\r", (int)readSensor());
 
 	}
