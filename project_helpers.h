@@ -88,6 +88,8 @@ uint32_t readSensor(); // should read the raw data from the APB and convert it i
 void Touchscreen_init();
 uint16_t getX();
 uint16_t getY();
+void addNewVal(uint16_t* old, uint16_t newVal);
+int checkPress(uint16_t* value);
 uint8_t parseTouch();
 		// should get X and Y and check for press
 		// returns button that was pressed or FF if no press

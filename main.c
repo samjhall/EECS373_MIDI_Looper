@@ -123,7 +123,7 @@ void Timer1_IRQHandler() {
 		return;
 	}
 
-	parseTouch();
+	//parseTouch();
 	readKeypad(Loop.keypadBuffer);
 	//Loop.selectedChannel = Loop.keypadBuffer[0];
 	Loop.selectedChannel = 4;
@@ -158,9 +158,9 @@ void test_library() {
 	Timer_set_and_start(25000000); // 1 second = 100 000 000
 
 	while(1) {
-		//parseTouch();
+		parseTouch();
 		Loop.buttonsBuffer[0] = readButtons();
-		printf("\tDistance (cm): %d\n\r", (int)readSensor());
+		//printf("\tDistance (cm): %d\n\r", (int)readSensor());
 
 	}
 }

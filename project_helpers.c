@@ -158,6 +158,7 @@ uint16_t getX() {
 	MSS_GPIO_drive_inout( MSS_GPIO_2, MSS_GPIO_DRIVE_HIGH );
 	MSS_GPIO_drive_inout( MSS_GPIO_3, MSS_GPIO_DRIVE_LOW );
 
+
 	//Read Y2 as the output from ADC3
 	uint16_t adc_data = ACE_get_ppe_sample(adc_handler4);
 	return adc_data;
@@ -171,34 +172,60 @@ uint16_t getY() {
 	//Set y1(GPIO3) to high and y2(GPIO1) to low
 
 
+
 	//Read from adc at x1 or GPIO0
 	uint16_t adc_data = ACE_get_ppe_sample(adc_handler5);
 	return adc_data;
 }
+
+/*
+void addNewVal(uint16_t* old, uint16_t newVal) {
+	int i =0;
+	while(i<15){
+		old[15-i] = old[15-i-1];
+		i++;
+	}
+	old[0] = newVal;
+}
+
+int checkPress(uint16_t* value) {
+	int count =0;
+	int i =0;
+	while(i<15){
+		int delta = value[15-i] - value[15-i-1];
+															// was 975		// was 875
+		if(((delta < 300) && (delta > -300)) && (value[15-i] >1700 || value[15-i] <1400))
+			count++;
+		i++;
+	}
+	return count>8;
+}
+*/
+
 uint8_t parseTouch() {
-	uint16_t alternator = 0;
+
 	volatile uint16_t x = 0;
 	volatile uint16_t y = 0;
 
-	while(alternator < 2*ACE_SAMPLE_SIZE) {
-		if(alternator<ACE_SAMPLE_SIZE){
-			y = getY(adc_handler5);
+	int j = 0;
+	int i =0;
+	while( j<1000 ) {
+		if(i > 2 * ACE_SAMPLE_SIZE){
+			i=0;
 		}
-		else{
+		if(i<ACE_SAMPLE_SIZE){
 			x = getX(adc_handler4);
 		}
-		alternator++;
+		//printf("X: %d  \n\r", x);
+		else{
+			y = getY(adc_handler5);
+		}
+		//printf("Y: %d  \n\r", y);
+
+		printf("Y: %d  X: %d\n\r", y, x);
+		++i;
+		++j;
 	}
-
-	printf("X: %d   Y: %d\n\r", x, y);
-
-	/*
-	 *
-	 * ADD BUTTON PARSING LOGIC HERE
-	 *
-	 */
-
-
 	return 0;
 }
 
