@@ -91,6 +91,65 @@ size_t readKeypad(uint8_t* buffer) {
 	return UART_get_rx(&apb_uart, buffer, sizeof(buffer));
 }
 
+uint8_t instrumentSelect(uint8_t* buffer) {
+	uint8_t instrument = 0;
+	switch(buffer[0]) {
+	case '0':
+		instrument = 1;
+		break;
+	case '1':
+		instrument = 18;
+		break;
+	case '2':
+		instrument = 26;
+		break;
+	case '3':
+		instrument = 35;
+		break;
+
+	case '4':
+		instrument = 41;
+		break;
+	case '5':
+		instrument = 49;
+		break;
+	case '6':
+		instrument = 76;
+		break;
+	case '7':
+		instrument = 81;
+		break;
+
+	case '8':
+		instrument = 82;
+		break;
+	case '9':
+		instrument = 106;
+		break;
+	case 'A':
+		instrument = 117;
+		break;
+	case 'B':
+		instrument = 119;
+		break;
+
+	case 'C':
+		instrument = 121;
+		break;
+	case 'D':
+		instrument = 105;
+		break;
+	case '*':
+		instrument = 5;
+		break;
+	case '#':
+		instrument = 128;
+		break;
+
+	}
+	return instrument - 1; // need to adjust for 1-indexing
+}
+
 void sendCharDisplay(uint8_t* buffer, uint8_t size) {
 	UART_send(&apb_uart, buffer, size);
 }
@@ -187,20 +246,24 @@ void addNewVal(uint16_t* old, uint16_t newVal) {
 	}
 	old[0] = newVal;
 }
-
-int checkPress(uint16_t* value) {
+*/
+int checkPress(struct Loop_Master* loopIn) {
 	int count =0;
 	int i =0;
-	while(i<15){
-		int delta = value[15-i] - value[15-i-1];
-															// was 975		// was 875
-		if(((delta < 300) && (delta > -300)) && (value[15-i] >1700 || value[15-i] <1400))
+	while(i<11){
+		int x1 = loopIn->touchscreenBuffer[i];
+		int x2 = loopIn->touchscreenBuffer[i+2];
+		int y1 = loopIn->touchscreenBuffer[i+1];
+		int y2 = loopIn->touchscreenBuffer[i+3];
+		int deltaX = x1 - x2;
+		int deltaY = y1 - y2;
+		// was 975		// was 875
+		if(((deltaX < 20) && (deltaX > -20))&&((deltaY < 20) && (deltaY > -20)) && (x1>200 && (x1 > 1800 || x1 < 1640)) && (y1>300&&(y1 < 1570 || y1 > 1720)))
 			count++;
-		i++;
+		i+=2;
 	}
-	return count>8;
+	return count>5;
 }
-*/
 
 void parseTouch(struct Loop_Master* loopIn) {
 
@@ -223,8 +286,14 @@ void parseTouch(struct Loop_Master* loopIn) {
 		++j;
 	}
 	//printf("Y: %d  X: %d\n\r", y, x);
-	loopIn->touchscreenBuffer[0] = x;
-	loopIn->touchscreenBuffer[1] = y;
+	int z =0;
+	while(z<12){
+		loopIn->touchscreenBuffer[z] = loopIn->touchscreenBuffer[z+2];
+		z++;
+	}
+	loopIn->touchscreenBuffer[12] = x;
+	loopIn->touchscreenBuffer[13] = y;
+
 }
 
 

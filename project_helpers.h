@@ -45,11 +45,12 @@ struct Loop_Master { // the "Master" object for the project
 	
 	uint8_t selectedChannel;
 	uint8_t recordingMode; // should be FF if in recording mode, 0 else
+	uint8_t touchscreenButtonPressed;
 	
 	uint8_t buttonsBuffer[1];
-	uint8_t keypadBuffer[1];
+	uint8_t keypadBuffer[2];
 	uint32_t distanceBuffer[1];
-	uint32_t touchscreenBuffer[2];
+	uint32_t touchscreenBuffer[14];
 	//struct channel* channelPtrs[16];
 	//uint8_t recordingBuffer[NUM_MEASURES * 8];
 };
@@ -78,6 +79,7 @@ void allNotesOff(); // may need to be used to clear the controller
 
 void APB_UART_init(); // character display and keypad
 size_t readKeypad(uint8_t* buffer);
+uint8_t instrumentSelect(uint8_t* buffer);
 void sendCharDisplay(uint8_t* buffer, uint8_t size);
 void clearCharDisplay(); // clears the entire display
 
@@ -90,13 +92,10 @@ void Touchscreen_init();
 uint16_t getX();
 uint16_t getY();
 void addNewVal(uint16_t* old, uint16_t newVal);
-int checkPress(uint16_t* value);
+int checkPress(struct Loop_Master* loopIn);
 void parseTouch(struct Loop_Master* loopIn);
 		// should get X and Y and check for press
 		// returns button that was pressed or FF if no press
-//void TSDEBUG_testTouch(); // used for debugging
-//void TSDEBUG_addNewVal(uint16_t* old, uint16_t newVal);
-//void TSDEBUG_checkPress(uint16_t* value);
 
 /***	GRAPHICS DISPLAY	***/
 

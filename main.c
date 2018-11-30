@@ -16,10 +16,11 @@ struct Loop_Master Loop = {
 		NUM_MEASURES * NOTES_PER_MEASURE,
 		0,
 		0,
+		-1,
 		{0x00},
-		{0xBB},
+		{0xBB, 0xBB},
 		{0xFFFFFFFF},
-		{0, 0}
+		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
 };
 
 // EMPTY CHANNEL
@@ -90,6 +91,7 @@ uint8_t GLOBAL_PAUSE_FLAG = 0;
 
 // This will be the main "driver" function as most of the work will be done between interrupts
 void Timer1_IRQHandler() {
+	// check the four function buttons
 	if(Loop.buttonsBuffer[0] & 0x01) {
 		GLOBAL_PAUSE_FLAG = ~GLOBAL_PAUSE_FLAG;
 	}
@@ -100,7 +102,7 @@ void Timer1_IRQHandler() {
 			++i;
 		}
 	}
-	if(Loop.buttonsBuffer[0] & 0x04) { // DOESNT CLEAR
+	if(Loop.buttonsBuffer[0] & 0x04) {
 		int i = 0;
 		int j = 0;
 		while (i < 16) {
@@ -108,7 +110,9 @@ void Timer1_IRQHandler() {
 				(channels[i]->data)[j] = EMPTY_CHANNEL.data[0];
 				++j;
 			}
+			printf("CLEARING CHANNEL %d WITH %d", i, EMPTY_CHANNEL.data[0]);
 			++i;
+			j = 0;
 		}
 		allNotesOff();
 	}
@@ -119,15 +123,34 @@ void Timer1_IRQHandler() {
 		return;
 	}
 
+	// check for pause
 	if(GLOBAL_PAUSE_FLAG != 0) {
 		MSS_TIM1_clear_irq();
 		return;
 	}
 
-	//parseTouch();
+
+	// check for a touchscreen press
+	if(Loop.touchscreenButtonPressed != 255) {
+		Loop.selectedChannel = Loop.touchscreenButtonPressed;
+	}
+
+	printf("Button Pressed: %d\n\r", Loop.touchscreenButtonPressed);
+
+
+	// instrument selection from the keypad
+	Loop.keypadBuffer[1] = Loop.keypadBuffer[0];
 	readKeypad(Loop.keypadBuffer);
-	//Loop.selectedChannel = Loop.keypadBuffer[0];
-	Loop.selectedChannel = 4;
+	uint8_t program = instrumentSelect(Loop.keypadBuffer);
+	if((program != channels[Loop.selectedChannel]->programNumber)
+			&& (program != 255)
+			&& (Loop.keypadBuffer[0] != Loop.keypadBuffer[1])) {
+		printf("CHANGE TO %d\n\r", program);
+		programChange(channels[Loop.selectedChannel], program);
+		channels[Loop.selectedChannel]->programNumber = program;
+	}
+
+
 
 	if(Loop.recordingMode != 0) {
 		//channels[Loop.selectedChannel]->data[Loop.count] = Loop.keypadBuffer[0];
@@ -135,7 +158,6 @@ void Timer1_IRQHandler() {
 	}
 
 
-	// DO NOT DELETE ABOVE
 
 	Cycle_channels(channels, &Loop);
 
@@ -163,12 +185,52 @@ void test_library() {
 		Loop.buttonsBuffer[0] = readButtons();
 		int x =Loop.touchscreenBuffer[0];
 		int y =Loop.touchscreenBuffer[1];
-		if((x > 1800 || x < 1650) && (y < 1550 || y > 1700)){
-			printf("X = %d  and Y = %d\n\r", x, y);
+		int xSection = -1;
+		int ySection = -1;
+		if(x > 2600){
+			xSection = 0;
+		}
+		else if(x < 2500 && x > 1900){
+			xSection = 1;
+		}
+		else if(x < 1700 && x > 1100){
+			xSection = 2;
+		}
+		else if(x < 1000){
+			xSection = 3;
+		}
+
+		if(y > 2450){
+			ySection = 0;
+		}
+		else if(y < 2400 && y > 1750){
+			ySection = 1;
+		}
+		else if(y < 1650 && y > 1100){
+			ySection = 2;
+		}
+		else if(y < 1000){
+			ySection = 3;
+		}
+
+		//Read Which Section
+		if(checkPress(&Loop) && xSection != -1 && ySection!= -1){
+
+			//printf("X = %d  and Y = %d and final Section = %d\n\r", xSection, ySection, xSection + ySection*4);
+			Loop.touchscreenButtonPressed = xSection + ySection*4;
 		}
 		else{
-			printf("No Touch\n\r");
+			//printf("No Touch\n\r");
+			Loop.touchscreenButtonPressed = -1;
 		}
+
+
+		/*** MICROPHONE ***/
+		ace_channel_handle_t adc_handler2 = ACE_get_channel_handle((const uint8_t *)"ADCDirectInput_2");
+		uint16_t adc_data2 = ACE_get_ppe_sample(adc_handler2);
+		//printf("Here it is: %d\n\r", (int)adc_data2);
+
+
 		//printf("\tDistance (cm): %d\n\r", (int)readSensor());
 
 	}
