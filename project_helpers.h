@@ -36,7 +36,7 @@ struct channel {
 	uint8_t channelNumber;
 	uint8_t programNumber;
 	uint8_t lastPlayed;
-	uint8_t data[NUM_MEASURES * 8]; // eighth notes
+	uint8_t data[NUM_MEASURES * NOTES_PER_MEASURE]; // eighth notes
 };
 
 struct Loop_Master { // the "Master" object for the project
@@ -56,6 +56,9 @@ struct Loop_Master { // the "Master" object for the project
 	//uint8_t recordingBuffer[NUM_MEASURES * 8];
 };
 
+void Clear_channel(struct channel* channel);
+void Fill_channel(struct channel* channel);
+void Channel_init(struct channel* channelPtrs[16]);
 void Update_metronome(struct Loop_Master* loopIn);
 void Cycle_channels(struct channel* channelPtrs[NUM_MEASURES * 8], struct Loop_Master* loopIn);
 
@@ -95,11 +98,11 @@ uint32_t readSensor(); // should read the raw data from the APB and convert it i
 void Touchscreen_init();
 uint16_t getX();
 uint16_t getY();
-void addNewVal(uint16_t* old, uint16_t newVal);
 int checkPress(struct Loop_Master* loopIn);
 void parseTouch(struct Loop_Master* loopIn);
 		// should get X and Y and check for press
 		// returns button that was pressed or FF if no press
+void readTouch(struct Loop_Master* loopIn);
 
 /***	GRAPHICS DISPLAY	***/
 

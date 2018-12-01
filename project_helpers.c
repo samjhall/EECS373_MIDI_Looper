@@ -4,12 +4,7 @@
  *  Created on: Nov 16, 2018
  *      Author: samjhall
  */
-
-//#include "drivers/mss_uart/mss_uart.h"
-//#include "drivers/CoreUARTapb/core_uart_apb.h"
-//#include "drivers/mss_timer/mss_timer.h"
 #include "project_helpers.h"
-//#include <stdint.h>
 
 /***	GLOBAL	***/
 UART_instance_t apb_uart;
@@ -20,6 +15,29 @@ void Global_init() {
 	Timer_init();
 	Touchscreen_init();
 	Reset_init();
+}
+
+void Clear_channel(struct channel* channel) {
+	int i = 0;
+	while(i < (NUM_MEASURES * NOTES_PER_MEASURE)) {
+		channel->data[i] = -1;
+		++i;
+	}
+}
+
+void Fill_channel(struct channel* channel) {
+	channel->programNumber = 0;
+	channel->lastPlayed = 0;
+	Clear_channel(channel);
+}
+
+void Channel_init(struct channel* channelPtrs[16]) {
+	int i = 0;
+	while(i < 16) {
+		channelPtrs[i]->channelNumber = i;
+		Fill_channel(channelPtrs[i]);
+		++i;
+	}
 }
 
 void Update_metronome(struct Loop_Master* loopIn) {
@@ -75,10 +93,8 @@ void noteOff(struct channel* ch, uint8_t pitch, uint8_t attack) {
 }
 
 void allNotesOff() {
-	//uint8_t clearMIDI[3] = {0xB0, 123, 0};
-	//MSS_UART_polled_tx(&g_mss_uart1, clearMIDI, 3);
-	uint8_t clearMIDI[1] = {0xFF};
-	MSS_UART_polled_tx(&g_mss_uart1, clearMIDI, 1);
+	uint8_t clearMIDI[3] = {0xB0, 123, 0};
+	MSS_UART_polled_tx(&g_mss_uart1, clearMIDI, 3);
 }
 
 // RESET GPIO 4
@@ -205,8 +221,6 @@ void Timer_set_and_start(uint32_t cycle_count) {
 /***	DISTANCE SENSOR	***/
 uint32_t readSensor() {
 	volatile uint32_t* read = (uint32_t*)(DISTANCE_SENSOR_ADDRESS);
-	//printf("\tDistance (cm): %x\n\r", *read);
-
 	return ((*read) / (58 * 100));
 }
 
@@ -242,23 +256,11 @@ uint16_t getY() {
 	MSS_GPIO_drive_inout( MSS_GPIO_1, MSS_GPIO_DRIVE_LOW );
 	//Set y1(GPIO3) to high and y2(GPIO1) to low
 
-
-
 	//Read from adc at x1 or GPIO0
 	uint16_t adc_data = ACE_get_ppe_sample(adc_handler5);
 	return adc_data;
 }
 
-/*
-void addNewVal(uint16_t* old, uint16_t newVal) {
-	int i =0;
-	while(i<15){
-		old[15-i] = old[15-i-1];
-		i++;
-	}
-	old[0] = newVal;
-}
-*/
 int checkPress(struct Loop_Master* loopIn) {
 	int count =0;
 	int i =0;
@@ -297,7 +299,6 @@ void parseTouch(struct Loop_Master* loopIn) {
 		++i;
 		++j;
 	}
-	//printf("Y: %d  X: %d\n\r", y, x);
 	int z =0;
 	while(z<12){
 		loopIn->touchscreenBuffer[z] = loopIn->touchscreenBuffer[z+2];
@@ -308,6 +309,47 @@ void parseTouch(struct Loop_Master* loopIn) {
 
 }
 
+void readTouch(struct Loop_Master* loopIn) {
+	parseTouch(loopIn);
+	loopIn->buttonsBuffer[0] = readButtons();
+	int x =loopIn->touchscreenBuffer[0];
+	int y =loopIn->touchscreenBuffer[1];
+	int xSection = -1;
+	int ySection = -1;
+	if(x > 2600){
+		xSection = 0;
+	}
+	else if(x < 2500 && x > 1900){
+		xSection = 1;
+	}
+	else if(x < 1700 && x > 1100){
+		xSection = 2;
+	}
+	else if(x < 1000){
+		xSection = 3;
+	}
+
+	if(y > 2450){
+		ySection = 0;
+	}
+	else if(y < 2400 && y > 1750){
+		ySection = 1;
+	}
+	else if(y < 1650 && y > 1100){
+		ySection = 2;
+	}
+	else if(y < 1000){
+		ySection = 3;
+	}
+
+	//Read Which Section
+	if(checkPress(loopIn) && xSection != -1 && ySection!= -1){
+		loopIn->touchscreenButtonPressed = xSection + ySection*4;
+	}
+	else{
+		loopIn->touchscreenButtonPressed = -1;
+	}
+}
 
 
 /***	BUTTONS 	***/
