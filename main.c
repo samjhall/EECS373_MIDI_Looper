@@ -49,6 +49,9 @@ uint8_t GLOBAL_PAUSE_FLAG = 0;
 void Timer1_IRQHandler() {
 	// check the four function buttons
 	// check for pause
+
+	printf("distance: %d\n\r", readSensor());
+
 	if(Loop.buttonsBuffer[0] & 0x01) {
 		GLOBAL_PAUSE_FLAG = ~GLOBAL_PAUSE_FLAG;
 	}
@@ -104,7 +107,35 @@ void Timer1_IRQHandler() {
 
 
 	if(Loop.recordingMode != 0) {
-		channels[Loop.selectedChannel]->data[Loop.count] = readSensor() + 24;
+		uint32_t data = readSensor();
+		//printf("distance: %d\n\r", data);
+		if(Loop.selectedChannel == 9) { // special setup for drums
+			if((data <= 16)) {
+				channels[Loop.selectedChannel]->data[Loop.count] = 35; // bass
+			} else if((data > 16) && (data <= 24)) {
+				channels[Loop.selectedChannel]->data[Loop.count] = 42; // closed hihat
+			} else if((data > 24) && (data <= 32)) {
+				channels[Loop.selectedChannel]->data[Loop.count] = 38; // snare
+			} else if((data > 32) && (data <= 40)) {
+				channels[Loop.selectedChannel]->data[Loop.count] = 49; // crash
+			} else if((data > 40) && (data <= 48)) {
+				channels[Loop.selectedChannel]->data[Loop.count] = 39; // clap
+			} else if((data > 48) && (data <= 56)) {
+				channels[Loop.selectedChannel]->data[Loop.count] = 60; // high bongo
+			} else if((data > 56) && (data <= 64)) {
+				channels[Loop.selectedChannel]->data[Loop.count] = 36; // open hihat
+			} else if((data > 64) && (data <= 72)) {
+				channels[Loop.selectedChannel]->data[Loop.count] = 56; // cowbell
+			}
+		}
+		else {
+			if((data > 72) || (data < 8)) { // total width of 64
+				channels[Loop.selectedChannel]->data[Loop.count] = -1;
+			}
+			else {
+				channels[Loop.selectedChannel]->data[Loop.count] = readSensor() + 12;
+			}
+		}
 	}
 
 
@@ -128,7 +159,6 @@ void test_library() {
 
 	while(1) {
 		readTouch(&Loop);
-
 
 		/*** MICROPHONE ***/
 		/*
