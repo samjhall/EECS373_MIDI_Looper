@@ -56,11 +56,17 @@ void Update_metronome(struct Loop_Master* loopIn) {
 void Cycle_channels(struct channel* channelPtrs[16], struct Loop_Master* loopIn) {
 	int i = 0;
 	while (i < 16) {
-		if(channelPtrs[i]->data[loopIn->count] != 0xFF) {
-			noteOff(channelPtrs[i], channelPtrs[i]->lastPlayed, 0);
-			noteOn(channelPtrs[i], channelPtrs[i]->data[loopIn->count], 40);
+		if(loopIn->channelsPlaying[i]){
+			//printf("\tplaying channel %d\n\r", i);
+			if(channelPtrs[i]->data[loopIn->count] != 0xFF) {
+				noteOff(channelPtrs[i], channelPtrs[i]->lastPlayed, 0);
+				noteOn(channelPtrs[i], channelPtrs[i]->data[loopIn->count], 40);
+			}
+			else {//if(channels[i]->data[Loop.count] == 0){
+				noteOff(channelPtrs[i], channelPtrs[i]->lastPlayed, 0);
+			}
 		}
-		else {//if(channels[i]->data[Loop.count] == 0){
+		else {
 			noteOff(channelPtrs[i], channelPtrs[i]->lastPlayed, 0);
 		}
 		++i;

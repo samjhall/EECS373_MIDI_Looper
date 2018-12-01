@@ -49,6 +49,7 @@ struct Loop_Master { // the "Master" object for the project
 	uint8_t touchscreenButtonPressed;
 	
 	uint8_t keypadBuffer[2];
+	uint8_t channelsPlaying[16];
 	uint32_t buttonsBuffer[1];
 	uint32_t distanceBuffer[1];
 	uint32_t touchscreenBuffer[14];

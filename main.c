@@ -4,7 +4,6 @@
 // baud val (written to BASE + 0x008) = (clock / (16 * baud rate)) - 1
 // for 100 MHz at 9600 baud, this is 650 in decimal
 
-
 struct Loop_Master Loop = {
 		1,
 		0,
@@ -13,10 +12,12 @@ struct Loop_Master Loop = {
 		0,
 		-1,
 		{0xBB, 0xBB},
+		{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
 		{0},
 		{0xFFFFFFFF},
 		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
 };
+
 
 struct channel channel0;
 struct channel channel1;
@@ -53,6 +54,7 @@ void Timer1_IRQHandler() {
 	printf("distance: %d\n\r", readSensor());
 
 	if(Loop.buttonsBuffer[0] & 0x01) {
+		printf("PAUSED\n\r");
 		GLOBAL_PAUSE_FLAG = ~GLOBAL_PAUSE_FLAG;
 	}
 
@@ -72,18 +74,26 @@ void Timer1_IRQHandler() {
 	}
 
 	if(GLOBAL_PAUSE_FLAG != 0) { // user should be able to clear when paused, but not record
+		printf("PAUSED\n\r");
 		allNotesOff();
 		MSS_TIM1_clear_irq();
 		return;
 	}
 
 	if((Loop.buttonsBuffer[0] & 0x08) && (Loop.recordingMode == 0)) { // set recordingMode to "on" and restart the metronome
+		printf("RECORDING ON CHANNEL %d\n\r", Loop.selectedChannel);
+		Loop.channelsPlaying[Loop.selectedChannel] = 1;
 		Loop.recordingMode = ~Loop.recordingMode;
 		Loop.count = 0;
 		MSS_TIM1_clear_irq();
 		return;
 	}
 
+
+	if(Loop.selectedChannel == Loop.touchscreenButtonPressed){
+		printf("TOGGLING CHANNEL %d\n\r", Loop.selectedChannel);
+		Loop.channelsPlaying[Loop.selectedChannel] = !Loop.channelsPlaying[Loop.selectedChannel];
+	}
 
 	// check for a touchscreen press
 	if(Loop.touchscreenButtonPressed != 255) {
