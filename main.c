@@ -51,7 +51,7 @@ void Timer1_IRQHandler() {
 	// check the four function buttons
 	// check for pause
 
-	printf("distance: %d\n\r", readSensor());
+	printf("distance: %d\n\r	imu: %d\n\r", readSensor(), readIMU());
 
 	if(Loop.buttonsBuffer[0] & 0x01) {
 		printf("PAUSED\n\r");
@@ -180,7 +180,6 @@ void test_library() {
 
 	while(1) {
 		readTouch(&Loop);
-
 		/*** MICROPHONE ***/
 		/*
 		ace_channel_handle_t adc_handler2 = ACE_get_channel_handle((const uint8_t *)"ADCDirectInput_2");

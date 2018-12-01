@@ -374,6 +374,7 @@ uint32_t readButtons() {
 void IMU_init() {
 	// placeholder
 }
-uint32_t readIMU() {
-	return 0; // placeholder
+uint16_t readIMU() {
+	adc_handler2 = ACE_get_channel_handle((const uint8_t *)"ADCDirectInput_2");
+	return ACE_get_ppe_sample(adc_handler2);
 }

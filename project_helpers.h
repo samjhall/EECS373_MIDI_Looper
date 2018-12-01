@@ -27,7 +27,8 @@
 #define FUNCTION_BUTTONS_ADDRESS 0x40050200
 
 UART_instance_t apb_uart;
-ace_channel_handle_t adc_handler4;//  X AXIS
+ace_channel_handle_t adc_handler2; // IMU Y AXIS
+ace_channel_handle_t adc_handler4; // X AXIS
 ace_channel_handle_t adc_handler5; // Y AXIS
 
 void Global_init(); // calls every device's initializer
@@ -133,6 +134,6 @@ uint32_t readButtons();
 
 /***	IMU 	***/
 void IMU_init();
-uint32_t readIMU();
+uint16_t readIMU();
 
 #endif /* PROJECT_HELPERS_H_ */
