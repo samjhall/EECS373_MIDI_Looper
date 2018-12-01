@@ -24,6 +24,7 @@
 #define NOTES_PER_MEASURE 8
 #define ACE_SAMPLE_SIZE 50 // number of consecutive readings of X/Y to get from touchscreen
 #define DISTANCE_SENSOR_ADDRESS 0x40050100
+#define FUNCTION_BUTTONS_ADDRESS 0x40050200
 
 UART_instance_t apb_uart;
 ace_channel_handle_t adc_handler4;//  X AXIS
@@ -47,8 +48,8 @@ struct Loop_Master { // the "Master" object for the project
 	uint8_t recordingMode; // should be FF if in recording mode, 0 else
 	uint8_t touchscreenButtonPressed;
 	
-	uint8_t buttonsBuffer[1];
 	uint8_t keypadBuffer[2];
+	uint32_t buttonsBuffer[1];
 	uint32_t distanceBuffer[1];
 	uint32_t touchscreenBuffer[14];
 	//struct channel* channelPtrs[16];
@@ -71,7 +72,7 @@ void allNotesOff(); // may need to be used to clear the controller
 					// produces some audible noises but silences everything
 
 // RESET GPIO 4
-void resetInit();
+void Reset_init();
 void reset();
 
 					
@@ -123,8 +124,8 @@ void Timer_set_and_start(uint32_t cycle_count);
 // CLEAR CHANNEL GPIO 11
 // CLEAR ALL GPIO 12
 // RECORD GPIO 13
-void Buttons_init();
-uint8_t readButtons();
+//void Buttons_init();
+uint32_t readButtons();
 
 
 #endif /* PROJECT_HELPERS_H_ */

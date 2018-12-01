@@ -19,7 +19,7 @@ void Global_init() {
 	APB_UART_init();
 	Timer_init();
 	Touchscreen_init();
-	Buttons_init();
+	Reset_init();
 }
 
 void Update_metronome(struct Loop_Master* loopIn) {
@@ -82,7 +82,7 @@ void allNotesOff() {
 }
 
 // RESET GPIO 4
-void resetInit() {
+void Reset_init() {
 	MSS_GPIO_config( MSS_GPIO_4, MSS_GPIO_OUTPUT_MODE );
 }
 
@@ -311,16 +311,11 @@ void parseTouch(struct Loop_Master* loopIn) {
 
 
 /***	BUTTONS 	***/
-void Buttons_init() {
-	MSS_GPIO_config( MSS_GPIO_10, MSS_GPIO_INPUT_MODE );
-	MSS_GPIO_config( MSS_GPIO_11, MSS_GPIO_INPUT_MODE );
-	MSS_GPIO_config( MSS_GPIO_12, MSS_GPIO_INPUT_MODE );
-	MSS_GPIO_config( MSS_GPIO_13, MSS_GPIO_INPUT_MODE );
-}
-uint8_t readButtons() {
-	// PLAY/PAUSE GPIO 10
-	// CLEAR CHANNEL GPIO 11
-	// CLEAR ALL GPIO 12
-	// RECORD GPIO 13
-	return (uint8_t)(0x0000000F & (MSS_GPIO_get_inputs() >> 10));
+
+uint32_t readButtons() {
+	// PLAY/PAUSE 1
+	// CLEAR CHANNEL 2
+	// CLEAR ALL GPIO 4
+	// RECORD GPIO 8
+	return *((uint32_t*)FUNCTION_BUTTONS_ADDRESS);
 }

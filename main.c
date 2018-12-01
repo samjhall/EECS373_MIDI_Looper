@@ -17,8 +17,8 @@ struct Loop_Master Loop = {
 		0,
 		0,
 		-1,
-		{0x00},
 		{0xBB, 0xBB},
+		{0},
 		{0xFFFFFFFF},
 		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
 };
@@ -117,6 +117,7 @@ void Timer1_IRQHandler() {
 			j = 0;
 		}
 		allNotesOff();
+		reset();
 		printf("ALL CHANNELS CLEARED\n\r");
 	}
 
