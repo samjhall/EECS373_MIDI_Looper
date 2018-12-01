@@ -68,6 +68,9 @@ void Timer1_IRQHandler() {
 			Clear_channel(channels[i]);
 			++i;
 		}
+		if(Loop.recordingMode != 0) {
+			Loop.recordingMode = 0;
+		}
 		allNotesOff();
 		reset();
 		printf("ALL CHANNELS CLEARED\n\r");
@@ -83,6 +86,13 @@ void Timer1_IRQHandler() {
 	if((Loop.buttonsBuffer[0] & 0x08) && (Loop.recordingMode == 0)) { // set recordingMode to "on" and restart the metronome
 		printf("RECORDING ON CHANNEL %d\n\r", Loop.selectedChannel);
 		Loop.channelsPlaying[Loop.selectedChannel] = 1;
+		Loop.recordingMode = ~Loop.recordingMode;
+		Loop.count = 0;
+		MSS_TIM1_clear_irq();
+		return;
+	}
+	if((Loop.buttonsBuffer[0] & 0x08) && (Loop.recordingMode != 0)) { // FIX THIS SHIT
+		printf("DONE RECORDING ON CHANNEL %d\n\r", Loop.selectedChannel);
 		Loop.recordingMode = ~Loop.recordingMode;
 		Loop.count = 0;
 		MSS_TIM1_clear_irq();
@@ -166,6 +176,7 @@ void test_library() {
 	clearCharDisplay();
 
 	Timer_set_and_start(25000000); // 1 second = 100 000 000
+	//Timer_set_and_start(12500000);
 
 	while(1) {
 		readTouch(&Loop);

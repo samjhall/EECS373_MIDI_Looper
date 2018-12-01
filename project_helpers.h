@@ -20,7 +20,7 @@
 /***	GLOBAL	***/
 #define BASE 0x40050000
 #define DEFAULT_TIMER_CYCLE_COUNT 50000000 // defaults to a half-second timer
-#define NUM_MEASURES 2
+#define NUM_MEASURES 4
 #define NOTES_PER_MEASURE 8
 #define ACE_SAMPLE_SIZE 50 // number of consecutive readings of X/Y to get from touchscreen
 #define DISTANCE_SENSOR_ADDRESS 0x40050100
@@ -131,5 +131,8 @@ void Timer_set_and_start(uint32_t cycle_count);
 //void Buttons_init();
 uint32_t readButtons();
 
+/***	IMU 	***/
+void IMU_init();
+uint32_t readIMU();
 
 #endif /* PROJECT_HELPERS_H_ */

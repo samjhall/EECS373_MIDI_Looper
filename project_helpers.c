@@ -15,6 +15,7 @@ void Global_init() {
 	Timer_init();
 	Touchscreen_init();
 	Reset_init();
+	IMU_init();
 }
 
 void Clear_channel(struct channel* channel) {
@@ -45,6 +46,7 @@ void Update_metronome(struct Loop_Master* loopIn) {
 	++loopIn->count;
 	if(loopIn->count >= loopIn->metronome_bound) {
 		if(loopIn->recordingMode != 0) {
+			printf("DONE RECORDING ON CHANNEL %d\n\r", loopIn->selectedChannel);
 			loopIn->recordingMode = ~loopIn->recordingMode;
 		}
 		
@@ -366,4 +368,12 @@ uint32_t readButtons() {
 	// CLEAR ALL GPIO 4
 	// RECORD GPIO 8
 	return *((uint32_t*)FUNCTION_BUTTONS_ADDRESS);
+}
+
+/***	IMU 	***/
+void IMU_init() {
+	// placeholder
+}
+uint32_t readIMU() {
+	return 0; // placeholder
 }
