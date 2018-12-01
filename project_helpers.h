@@ -58,7 +58,6 @@ struct Loop_Master { // the "Master" object for the project
 void Update_metronome(struct Loop_Master* loopIn);
 void Cycle_channels(struct channel* channelPtrs[NUM_MEASURES * 8], struct Loop_Master* loopIn);
 
-//void Channel_init(struct channel* channelPtrs, uint8_t numChannels);
 
 /***	MIDI (UART1)	***/
 
@@ -70,7 +69,11 @@ void noteOn(struct channel* ch, uint8_t pitch, uint8_t attack);
 void noteOff(struct channel* ch, uint8_t pitch, uint8_t attack);
 void allNotesOff(); // may need to be used to clear the controller
 					// produces some audible noises but silences everything
-					
+
+// RESET GPIO 4
+void resetInit();
+void reset();
+
 					
 /***	APB UART DEVICES	***/
 

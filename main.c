@@ -92,15 +92,18 @@ uint8_t GLOBAL_PAUSE_FLAG = 0;
 // This will be the main "driver" function as most of the work will be done between interrupts
 void Timer1_IRQHandler() {
 	// check the four function buttons
+	// check for pause
 	if(Loop.buttonsBuffer[0] & 0x01) {
 		GLOBAL_PAUSE_FLAG = ~GLOBAL_PAUSE_FLAG;
 	}
+
 	if(Loop.buttonsBuffer[0] & 0x02) {
 		int i = 0;
 		while(i < NUM_MEASURES * 8) {
 			channels[Loop.selectedChannel]->data[i] = EMPTY_CHANNEL.data[i];
 			++i;
 		}
+		printf("CHANNEL %d CLEARED\n\r", Loop.selectedChannel);
 	}
 	if(Loop.buttonsBuffer[0] & 0x04) {
 		int i = 0;
@@ -110,21 +113,22 @@ void Timer1_IRQHandler() {
 				(channels[i]->data)[j] = EMPTY_CHANNEL.data[0];
 				++j;
 			}
-			printf("CLEARING CHANNEL %d WITH %d", i, EMPTY_CHANNEL.data[0]);
 			++i;
 			j = 0;
 		}
 		allNotesOff();
+		printf("ALL CHANNELS CLEARED\n\r");
 	}
-	if((Loop.buttonsBuffer[0] & 0x08) && (Loop.recordingMode == 0)) { // set recordingMode to "on" and restart the metronome
-		Loop.recordingMode = ~Loop.recordingMode;
-		Loop.count = 0;
+
+	if(GLOBAL_PAUSE_FLAG != 0) { // user should be able to clear when paused, but not record
+		allNotesOff();
 		MSS_TIM1_clear_irq();
 		return;
 	}
 
-	// check for pause
-	if(GLOBAL_PAUSE_FLAG != 0) {
+	if((Loop.buttonsBuffer[0] & 0x08) && (Loop.recordingMode == 0)) { // set recordingMode to "on" and restart the metronome
+		Loop.recordingMode = ~Loop.recordingMode;
+		Loop.count = 0;
 		MSS_TIM1_clear_irq();
 		return;
 	}
@@ -133,9 +137,8 @@ void Timer1_IRQHandler() {
 	// check for a touchscreen press
 	if(Loop.touchscreenButtonPressed != 255) {
 		Loop.selectedChannel = Loop.touchscreenButtonPressed;
+		printf("Button Pressed: %d\n\r", Loop.touchscreenButtonPressed);
 	}
-
-	printf("Button Pressed: %d\n\r", Loop.touchscreenButtonPressed);
 
 
 	// instrument selection from the keypad
@@ -172,7 +175,8 @@ void Timer1_IRQHandler() {
 void test_library() {
 	Global_init();
 
-	allNotesOff();
+	//allNotesOff();
+	reset();
 
 	clearCharDisplay();
 

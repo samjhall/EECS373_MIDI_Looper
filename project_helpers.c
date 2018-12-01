@@ -75,8 +75,20 @@ void noteOff(struct channel* ch, uint8_t pitch, uint8_t attack) {
 }
 
 void allNotesOff() {
-	uint8_t clearMIDI[3] = {0xB0, 123, 0};
-	MSS_UART_polled_tx(&g_mss_uart1, clearMIDI, 3);
+	//uint8_t clearMIDI[3] = {0xB0, 123, 0};
+	//MSS_UART_polled_tx(&g_mss_uart1, clearMIDI, 3);
+	uint8_t clearMIDI[1] = {0xFF};
+	MSS_UART_polled_tx(&g_mss_uart1, clearMIDI, 1);
+}
+
+// RESET GPIO 4
+void resetInit() {
+	MSS_GPIO_config( MSS_GPIO_4, MSS_GPIO_OUTPUT_MODE );
+}
+
+void reset() {
+	MSS_GPIO_set_output(MSS_GPIO_4, MSS_GPIO_DRIVE_LOW);
+	MSS_GPIO_set_output(MSS_GPIO_4, MSS_GPIO_DRIVE_HIGH);
 }
 
 
