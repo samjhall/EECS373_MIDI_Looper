@@ -350,6 +350,8 @@ void readTouch(struct Loop_Master* loopIn) {
 		ySection = 3;
 	}
 
+	//printf("X: %d    Y: %d\n\r", x, y);
+
 	//Read Which Section
 	if(checkPress(loopIn) && xSection != -1 && ySection!= -1){
 		loopIn->touchscreenButtonPressed = xSection + ySection*4;
@@ -365,8 +367,10 @@ void readTouch(struct Loop_Master* loopIn) {
 uint32_t readButtons() {
 	// PLAY/PAUSE 1
 	// CLEAR CHANNEL 2
-	// CLEAR ALL GPIO 4
-	// RECORD GPIO 8
+	// CLEAR ALL 4
+	// RECORD 8
+	// TOGGLE ALL 16
+
 	return *((uint32_t*)FUNCTION_BUTTONS_ADDRESS);
 }
 

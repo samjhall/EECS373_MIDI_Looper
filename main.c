@@ -76,6 +76,15 @@ void Timer1_IRQHandler() {
 		printf("ALL CHANNELS CLEARED\n\r");
 	}
 
+	if(Loop.buttonsBuffer[0] & 0x10) {
+		 int i = 0;
+		 while(i < 16) {
+			 Loop.channelsPlaying[i] = 0;
+			 ++i;
+		 }
+		 printf("MUTED ALL CHANNELS\n\r");
+	}
+
 	if(GLOBAL_PAUSE_FLAG != 0) { // user should be able to clear when paused, but not record
 		printf("PAUSED\n\r");
 		allNotesOff();
