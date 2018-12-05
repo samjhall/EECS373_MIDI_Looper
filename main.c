@@ -53,6 +53,8 @@ void Timer1_IRQHandler() {
 
 	printf("distance: %d\n\r	imu: %d\n\r", readSensor(), readIMU());
 
+	Loop.buttonsBuffer[0] = readButtons();
+
 	if(Loop.buttonsBuffer[0] & 0x01) {
 		printf("PAUSED\n\r");
 		VGA_write(4, 7);
@@ -204,8 +206,13 @@ void test_library() {
 	//Timer_set_and_start(12500000);
 
 	while(1) {
+
+
 		readTouch(&Loop);
+
 		VGA_test();
+
+
 
 		/*** MICROPHONE ***/
 		/*
@@ -213,6 +220,25 @@ void test_library() {
 		uint16_t adc_data2 = ACE_get_ppe_sample(adc_handler2);
 		printf("Here it is: %d\n\r", (int)adc_data2);
 		*/
+
+		if (full==0)
+			process_samples();
+		//else{
+		//	play_samples(mymode);
+		//}
+
+		if (envm_idx>=TOTAL_SAMPLE_SIZE){
+			envm_idx = 0;
+			if (full) {
+				full = 0;
+				ACE_disable_sse_irq(PC0_FLAG0);
+			}
+			else {
+				full = 1;
+				ACE_enable_sse_irq(PC0_FLAG0);
+			}
+			free_samples(full);
+		}
 
 	}
 }

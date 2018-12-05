@@ -9,6 +9,10 @@
 /***	GLOBAL	***/
 UART_instance_t apb_uart;
 
+volatile uint8_t pdma_buffer_idx = NB_OF_SAMPLE_BUFFERS;
+uint8_t* const envm = (uint8_t *) 0x6002b000;
+uint8_t* const dac_byte0 = (uint8_t*)0x40020504;
+
 void Global_init() {
 	MIDI_init();
 	APB_UART_init();
@@ -17,6 +21,7 @@ void Global_init() {
 	Reset_init();
 	IMU_init();
 	VGA_init();
+	Mic_init();
 }
 
 void Clear_channel(struct channel* channel) {
@@ -295,6 +300,8 @@ void parseTouch(struct Loop_Master* loopIn) {
 
 	int j = 0;
 	int i =0;
+			// was 1000
+			// was 500
 	while( j<1000 ) {
 		if(i > 2 * ACE_SAMPLE_SIZE){
 			i=0;
@@ -320,7 +327,6 @@ void parseTouch(struct Loop_Master* loopIn) {
 
 void readTouch(struct Loop_Master* loopIn) {
 	parseTouch(loopIn);
-	loopIn->buttonsBuffer[0] = readButtons();
 	int x =loopIn->touchscreenBuffer[0];
 	int y =loopIn->touchscreenBuffer[1];
 	int xSection = -1;
@@ -331,6 +337,7 @@ void readTouch(struct Loop_Master* loopIn) {
 	else if(x < 2500 && x > 1900){
 		xSection = 1;
 	}
+						// was 1100
 	else if(x < 1700 && x > 1100){
 		xSection = 2;
 	}
@@ -354,7 +361,7 @@ void readTouch(struct Loop_Master* loopIn) {
 	//printf("X: %d    Y: %d\n\r", x, y);
 
 	//Read Which Section
-	if(checkPress(loopIn) && xSection != -1 && ySection!= -1){
+	if((checkPress(loopIn) && xSection != -1 && ySection!= -1)){
 		loopIn->touchscreenButtonPressed = xSection + ySection*4;
 	}
 	else{
@@ -406,3 +413,157 @@ uint16_t readIMU() {
 	adc_handler2 = ACE_get_channel_handle((const uint8_t *)"ADCDirectInput_2");
 	return ACE_get_ppe_sample(adc_handler2);
 }
+
+/*** Microphone ***/
+void Mic_init(){
+	mymode = NORMAL;
+	full = 0;
+	envm_idx = 0;
+	dac_irq = 0;
+	NVIC_EnableIRQ(ACE_PC0_Flag0_IRQn);
+
+	ACE_init();
+	ACE_configure_sdd(
+			SDD1_OUT,
+			SDD_8_BITS,
+			SDD_VOLTAGE_MODE | SDD_RETURN_TO_ZERO,
+			INDIVIDUAL_UPDATE
+	);
+	ACE_enable_sdd(SDD1_OUT);
+	ACE_disable_sse_irq(PC0_FLAG0);
+
+
+
+	PDMA_init();
+	PDMA_configure
+	(
+			PDMA_CHANNEL_0,
+			PDMA_FROM_ACE,
+			PDMA_LOW_PRIORITY | PDMA_WORD_TRANSFER | PDMA_INC_DEST_FOUR_BYTES,
+			PDMA_DEFAULT_WRITE_ADJ
+	);
+	PDMA_set_irq_handler( PDMA_CHANNEL_0, ace_pdma_rx_handler );
+
+	NVIC_EnableIRQ( DMA_IRQn );
+
+	free_samples(full);
+}
+
+
+void free_samples(uint8_t full_flag){
+	uint32_t i;
+	for ( i = 0; i < NB_OF_SAMPLE_BUFFERS; ++i ){
+		buffer_status[i] = FREE_BUFFER;
+	}
+	pdma_buffer_idx = 0;
+	buffer_status[pdma_buffer_idx] = UNDER_DMA_CONTROL;
+	if (full_flag){
+	}
+	else{
+		PDMA_enable_irq( PDMA_CHANNEL_0 );
+		PDMA_start
+		(
+				PDMA_CHANNEL_0,
+				(uint32_t) PDMA_ACE_PPE_DATAOUT,
+				(uint32_t) samples_buffer[pdma_buffer_idx],
+				SAMPLES_BUFFER_SIZE
+		);
+	}
+
+}
+
+void ace_pdma_rx_handler()
+{
+	PDMA_clear_irq( PDMA_CHANNEL_0 );
+	buffer_status[pdma_buffer_idx] = DATA_READY;
+	PDMA_disable_irq( PDMA_CHANNEL_0 );
+}
+
+void process_samples(){
+	uint8_t i;
+	if ( buffer_status[pdma_buffer_idx] == DATA_READY){
+		uint32_t proc_buffer_idx = pdma_buffer_idx;
+		if (pdma_buffer_idx==(NB_OF_SAMPLE_BUFFERS-1))
+			pdma_buffer_idx = 0;
+		else
+			pdma_buffer_idx++;
+
+		if (envm_idx<TOTAL_SAMPLE_SIZE){
+			PDMA_start (
+					PDMA_CHANNEL_0,
+					/* Read PPE_PDMA_DOUT */
+					(uint32_t) PDMA_ACE_PPE_DATAOUT,
+					/* This is in MSS ESRAM */
+					(uint32_t)samples_buffer[pdma_buffer_idx],
+					SAMPLES_BUFFER_SIZE
+			);
+			PDMA_enable_irq( PDMA_CHANNEL_0 );
+		}
+
+		buffer_status[pdma_buffer_idx] = UNDER_DMA_CONTROL;
+		uint8_t data_processed[SAMPLES_BUFFER_SIZE];
+		for ( i = 0; i < SAMPLES_BUFFER_SIZE; ++i ){
+			volatile uint16_t raw_value;
+			raw_value =  ACE_translate_pdma_value(samples_buffer[proc_buffer_idx][i], 0);
+			data_processed[i] = raw_value>>4;
+		}
+		NVM_write((uint32_t)(envm+envm_idx), data_processed, SAMPLES_BUFFER_SIZE);
+		envm_idx += SAMPLES_BUFFER_SIZE;
+	}
+}
+
+void play_samples(mymode_t MODE){
+	uint8_t data[2];
+	uint32_t data_out = 0;
+	static uint8_t hold = 0;
+	if (dac_irq){
+		if (MODE==NORMAL){
+			data_out = envm[envm_idx];
+			envm_idx += 1;
+		}
+		else if (MODE==DOUBLE){
+			data[0] = envm[envm_idx];
+			data[1] = envm[envm_idx+1];
+			data_out = (data[0]+data[1])>>1;
+			envm_idx += 2;
+		}
+		else if(MODE == QUAD){
+			data[0] = envm[envm_idx];
+			data[1] = envm[envm_idx+1];
+			data[2] = envm[envm_idx+2];
+			data[3] = envm[envm_idx+3];
+			data_out = (data[0]+data[1]+data[2]+data[3])>>2;
+			envm_idx += 4;
+		}
+		else if (MODE==HALF){
+			data_out = envm[envm_idx];
+			if (hold){
+				hold = 0;
+				envm_idx += 1;
+			}
+			else
+				hold = 1;
+
+		}
+		else if (MODE==BACK){
+			data_out = envm[(TOTAL_SAMPLE_SIZE - envm_idx)];
+			envm_idx += 1;
+		}
+		ACE_set_sdd_value(SDD1_OUT, data_out);
+		dac_irq = 0;
+	}
+}
+
+void ACE_PC0_Flag0_IRQHandler(){
+	//dac_irq = 1;
+	uint8_t data[2];
+	uint32_t data_out = 0;
+	static uint8_t hold = 0;
+
+	data_out = envm[envm_idx];
+	envm_idx += 1;
+
+	ACE_set_sdd_value(SDD1_OUT, data_out);
+	ACE_clear_sse_irq(PC0_FLAG0);
+}
+

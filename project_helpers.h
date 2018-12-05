@@ -13,6 +13,8 @@
 #include "drivers/mss_timer/mss_timer.h"
 #include "drivers/mss_gpio/mss_gpio.h"
 #include "drivers/mss_ace/mss_ace.h"
+#include "drivers/mss_nvm/drivers/F2DSS_NVM/mss_nvm.h"
+#include "drivers/mss_pdma/mss_pdma.h"
 #include <stdint.h>
 #include <stdio.h>
 
@@ -31,11 +33,34 @@
 #define VGA_YELLOW 0x6
 #define VGA_RED 0x4
 
+#define FREE_BUFFER         	0
+#define UNDER_DMA_CONTROL   	1
+#define DATA_READY          	2
+#define SAMPLES_BUFFER_SIZE		128
+#define NB_OF_SAMPLE_BUFFERS	2
+#define	TOTAL_SAMPLE_SIZE		81920
+
 
 UART_instance_t apb_uart;
 ace_channel_handle_t adc_handler2; // IMU Y AXIS
 ace_channel_handle_t adc_handler4; // X AXIS
 ace_channel_handle_t adc_handler5; // Y AXIS
+
+typedef enum{
+	NORMAL = 0,
+			DOUBLE,
+			HALF,
+			BACK,
+			QUAD
+} mymode_t;
+
+mymode_t mymode;
+uint8_t dac_irq;
+
+uint32_t envm_idx;
+uint32_t samples_buffer[NB_OF_SAMPLE_BUFFERS][SAMPLES_BUFFER_SIZE];
+uint8_t buffer_status[NB_OF_SAMPLE_BUFFERS];
+uint8_t full;
 
 void Global_init(); // calls every device's initializer
 
@@ -156,5 +181,13 @@ uint32_t readButtons();
 /***	IMU 	***/
 void IMU_init();
 uint16_t readIMU();
+
+/*** Microphone ***/
+void Mic_init();
+void free_samples(uint8_t full_flag);
+void ace_pdma_rx_handler();
+void process_samples();
+void play_samples(mymode_t MODE);
+void ACE_PC0_Flag0_IRQHandler();
 
 #endif /* PROJECT_HELPERS_H_ */
