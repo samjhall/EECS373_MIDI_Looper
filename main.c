@@ -55,6 +55,7 @@ void Timer1_IRQHandler() {
 
 	if(Loop.buttonsBuffer[0] & 0x01) {
 		printf("PAUSED\n\r");
+		VGA_write(4, 7);
 		GLOBAL_PAUSE_FLAG = ~GLOBAL_PAUSE_FLAG;
 	}
 
@@ -80,6 +81,7 @@ void Timer1_IRQHandler() {
 		 int i = 0;
 		 while(i < 16) {
 			 Loop.channelsPlaying[i] = 0;
+			 VGA_init();
 			 ++i;
 		 }
 		 printf("MUTED ALL CHANNELS\n\r");
@@ -116,7 +118,21 @@ void Timer1_IRQHandler() {
 
 	// check for a touchscreen press
 	if(Loop.touchscreenButtonPressed != 255) {
+		uint8_t color = (Loop.channelsPlaying[Loop.selectedChannel]) ? VGA_GREEN : VGA_RED;
+		//int i = 0;
+		//while(i<10){
+			VGA_write(Loop.selectedChannel, color);
+		//	i++;
+		//}
+
 		Loop.selectedChannel = Loop.touchscreenButtonPressed;
+
+		//i = 0;
+		//while(i<10){
+			VGA_write(Loop.selectedChannel, VGA_YELLOW);
+		//	i++;
+		//}
+
 		printf("Button Pressed: %d\n\r", Loop.touchscreenButtonPressed);
 	}
 
@@ -189,6 +205,8 @@ void test_library() {
 
 	while(1) {
 		readTouch(&Loop);
+		VGA_test();
+
 		/*** MICROPHONE ***/
 		/*
 		ace_channel_handle_t adc_handler2 = ACE_get_channel_handle((const uint8_t *)"ADCDirectInput_2");
@@ -202,8 +220,12 @@ void test_library() {
 
 int main()
 {
+
+	//Important stuff
 	printf("test\n"); // test UART0
 	Channel_init(channels);
 	test_library();
-	while(1) { }
+
+
+	return 0;
 }

@@ -25,6 +25,12 @@
 #define ACE_SAMPLE_SIZE 50 // number of consecutive readings of X/Y to get from touchscreen
 #define DISTANCE_SENSOR_ADDRESS 0x40050100
 #define FUNCTION_BUTTONS_ADDRESS 0x40050200
+#define VGA_DISPLAY_ADDRESS 0x40050300
+
+#define VGA_GREEN 0x2
+#define VGA_YELLOW 0x6
+#define VGA_RED 0x4
+
 
 UART_instance_t apb_uart;
 ace_channel_handle_t adc_handler2; // IMU Y AXIS
@@ -107,7 +113,22 @@ void parseTouch(struct Loop_Master* loopIn);
 void readTouch(struct Loop_Master* loopIn);
 
 /***	GRAPHICS DISPLAY	***/
+void VGA_init();
+void VGA_write(uint8_t button, uint8_t color);
+uint32_t VGA_test();
+// bits [6:3] - button number
+// bits [2:0] - color
 
+/*
+parameter BLACK = 3'b000;
+parameter BLUE = 3'b001;
+parameter GREEN = 3'b010;
+parameter CYAN = 3'b011;
+parameter RED = 3'b100;
+parameter MAGENTA = 3'b101;
+parameter YELLOW = 3'b110;
+parameter WHITE = 3'b111;
+*/
 
 /***	TIMER	***/
 

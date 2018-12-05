@@ -16,6 +16,7 @@ void Global_init() {
 	Touchscreen_init();
 	Reset_init();
 	IMU_init();
+	VGA_init();
 }
 
 void Clear_channel(struct channel* channel) {
@@ -361,6 +362,29 @@ void readTouch(struct Loop_Master* loopIn) {
 	}
 }
 
+
+/***	GRAPHICS DISPLAY	***/
+void VGA_init() {
+	int i = 0;
+	while(i < 16) {
+		VGA_write(i, VGA_RED);
+		++i;
+	}
+}
+void VGA_write(uint8_t button, uint8_t color) {
+	uint32_t data = 0x00000000 | (button << 4) | color;
+
+	int i = 0;
+	while(i < 10) {
+		*((uint32_t*)VGA_DISPLAY_ADDRESS) = data;//0xF0000000 & (button << 4) & color;
+		++i;
+	}
+	return;
+}
+
+uint32_t VGA_test() {
+	return *((uint32_t*)VGA_DISPLAY_ADDRESS);
+}
 
 /***	BUTTONS 	***/
 
