@@ -54,6 +54,10 @@ void Update_metronome(struct Loop_Master* loopIn) {
 		if(loopIn->recordingMode != 0) {
 			printf("DONE RECORDING ON CHANNEL %d\n\r", loopIn->selectedChannel);
 			loopIn->recordingMode = ~loopIn->recordingMode;
+			if(loopIn->selectedChannel == 10){
+				recordVoice = 0;
+				envm_idx_max = envm_idx;
+			}
 		}
 		
 		clearCharDisplay();
@@ -447,8 +451,10 @@ uint16_t readIMU() {
 /*** Microphone ***/
 void Mic_init(){
 	mymode = NORMAL;
-	full = 0;
+	recordVoice = 0;
+	playVoice = 0;
 	envm_idx = 0;
+	envm_idx_max = 1000000000;
 	dac_irq = 0;
 	NVIC_EnableIRQ(ACE_PC0_Flag0_IRQn);
 
@@ -476,7 +482,7 @@ void Mic_init(){
 
 	NVIC_EnableIRQ( DMA_IRQn );
 
-	free_samples(full);
+	free_samples(recordVoice);
 }
 
 
@@ -541,7 +547,7 @@ void process_samples(){
 		envm_idx += SAMPLES_BUFFER_SIZE;
 	}
 }
-
+/*
 void play_samples(mymode_t MODE){
 	uint8_t data[2];
 	uint32_t data_out = 0;
@@ -583,7 +589,7 @@ void play_samples(mymode_t MODE){
 		dac_irq = 0;
 	}
 }
-
+*/
 void ACE_PC0_Flag0_IRQHandler(){
 	//dac_irq = 1;
 	uint8_t data[2];

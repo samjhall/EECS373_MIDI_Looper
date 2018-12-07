@@ -59,6 +59,9 @@ void Timer1_IRQHandler() {
 		printf("PAUSED\n\r");
 		VGA_write(4, 7);
 		GLOBAL_PAUSE_FLAG = ~GLOBAL_PAUSE_FLAG;
+		if(!GLOBAL_PAUSE_FLAG && Loop.channelsPlaying[10]){
+			ACE_enable_sse_irq(PC0_FLAG0);
+		}
 	}
 
 	if(Loop.buttonsBuffer[0] & 0x02) {
@@ -72,7 +75,7 @@ void Timer1_IRQHandler() {
 			++i;
 		}
 		if(Loop.recordingMode != 0) {
-			Loop.recordingMode = 0;
+			Loop.recordingMode = ~Loop.recordingMode;
 		}
 		allNotesOff();
 		reset();
@@ -92,21 +95,44 @@ void Timer1_IRQHandler() {
 	if(GLOBAL_PAUSE_FLAG != 0) { // user should be able to clear when paused, but not record
 		printf("PAUSED\n\r");
 		allNotesOff();
+		ACE_disable_sse_irq(PC0_FLAG0);
 		MSS_TIM1_clear_irq();
 		return;
 	}
 
+	//Starting New Loop
+	if(Loop.count == 0){
+		envm_idx = 0;
+		if(Loop.recordingMode != 0 && Loop.selectedChannel == 10){
+			ACE_disable_sse_irq(PC0_FLAG0);
+			recordVoice = 1;
+			playVoice = 0;
+		}
+		else if(Loop.channelsPlaying[10]){
+			ACE_enable_sse_irq(PC0_FLAG0);
+			recordVoice = 0;
+			playVoice = 1;
+		}
+	}
+
+
+	//Start Recording
 	if((Loop.buttonsBuffer[0] & 0x08) && (Loop.recordingMode == 0)) { // set recordingMode to "on" and restart the metronome
 		printf("RECORDING ON CHANNEL %d\n\r", Loop.selectedChannel);
 		Loop.channelsPlaying[Loop.selectedChannel] = 1;
 		Loop.recordingMode = ~Loop.recordingMode;
 		Loop.count = 0;
+
 		MSS_TIM1_clear_irq();
 		return;
 	}
-	if((Loop.buttonsBuffer[0] & 0x08) && (Loop.recordingMode != 0)) { // FIX THIS SHIT
+	if((Loop.buttonsBuffer[0] & 0x08) && (Loop.recordingMode != 0)) {
 		printf("DONE RECORDING ON CHANNEL %d\n\r", Loop.selectedChannel);
 		Loop.recordingMode = ~Loop.recordingMode;
+		if(Loop.selectedChannel == 10){
+			recordVoice = 0;
+			envm_idx_max = envm_idx;
+		}
 		Loop.count = 0;
 		MSS_TIM1_clear_irq();
 		return;
@@ -115,7 +141,11 @@ void Timer1_IRQHandler() {
 
 	if(Loop.selectedChannel == Loop.touchscreenButtonPressed){
 		printf("TOGGLING CHANNEL %d\n\r", Loop.selectedChannel);
-		Loop.channelsPlaying[Loop.selectedChannel] = !Loop.channelsPlaying[Loop.selectedChannel];
+		if(Loop.selectedChannel == 10){
+			playVoice = !playVoice;
+		}
+		else
+			Loop.channelsPlaying[Loop.selectedChannel] = !Loop.channelsPlaying[Loop.selectedChannel];
 	}
 
 	// check for a touchscreen press
@@ -221,23 +251,18 @@ void test_library() {
 		printf("Here it is: %d\n\r", (int)adc_data2);
 		*/
 
-		if (full==0)
+		if (recordVoice==1){
 			process_samples();
+		}
 		//else{
 		//	play_samples(mymode);
 		//}
 
-		if (envm_idx>=TOTAL_SAMPLE_SIZE){
-			envm_idx = 0;
-			if (full) {
-				full = 0;
-				ACE_disable_sse_irq(PC0_FLAG0);
-			}
-			else {
-				full = 1;
-				ACE_enable_sse_irq(PC0_FLAG0);
-			}
-			free_samples(full);
+		if (envm_idx>=envm_idx_max){
+			ACE_disable_sse_irq(PC0_FLAG0);
+			//else {
+			//	ACE_enable_sse_irq(PC0_FLAG0);
+			//}
 		}
 
 	}
