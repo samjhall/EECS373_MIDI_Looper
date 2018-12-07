@@ -122,6 +122,7 @@ size_t readKeypad(uint8_t* buffer);
 uint8_t instrumentSelect(uint8_t* buffer);
 void sendCharDisplay(uint8_t* buffer, uint8_t size);
 void clearCharDisplay(); // clears the entire display
+void charDisplayData(struct Loop_Master* loopIn, uint32_t distance);
 
 
 /***	DISTANCE SENSOR	***/
@@ -141,7 +142,7 @@ void readTouch(struct Loop_Master* loopIn);
 void VGA_init();
 void VGA_write(uint8_t button, uint8_t color);
 uint32_t VGA_test();
-// bits [6:3] - button number
+// bits [7:4] - button number
 // bits [2:0] - color
 
 /*

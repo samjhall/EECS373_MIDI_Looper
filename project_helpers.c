@@ -206,6 +206,36 @@ void clearCharDisplay() {
 	sendCharDisplay(clearBuffer, 2);
 }
 
+void charDisplayData(struct Loop_Master* loopIn, uint32_t distance) {
+	uint8_t hex[16] = {'0', '1', '2', '3',
+						'4', '5', '6', '7',
+						'8', '9', 'A', 'B',
+						'C', 'D', 'E', 'F'};
+
+	uint8_t display[4][20];
+	// need to prepare this then send it
+
+	// reset the cursor
+	uint8_t resetCursor[2] = {0xFE, 0x80};
+	sendCharDisplay(resetCursor, 2);
+
+	int channel = 0;
+	int row = 0;
+	while(row < 4) {
+		int column = 1;
+		while(column < 8) {
+			if(loopIn->channelsPlaying[channel]) {
+				display[row][column] = hex[channel];
+			}
+			else {
+				display[row][column] = 'X';
+			}
+			++column;
+		}
+		++row;
+	}
+}
+
 
 
 /***	TIMER	***/
