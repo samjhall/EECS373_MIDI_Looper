@@ -71,6 +71,7 @@ struct channel {
 	uint8_t programNumber;
 	uint8_t lastPlayed;
 	uint8_t data[NUM_MEASURES * NOTES_PER_MEASURE]; // eighth notes
+	uint32_t attack[NUM_MEASURES * NOTES_PER_MEASURE];
 };
 
 struct Loop_Master { // the "Master" object for the project

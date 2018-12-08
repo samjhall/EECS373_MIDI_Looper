@@ -28,6 +28,7 @@ void Clear_channel(struct channel* channel) {
 	int i = 0;
 	while(i < (NUM_MEASURES * NOTES_PER_MEASURE)) {
 		channel->data[i] = -1;
+		channel->attack[i] = 0;
 		++i;
 	}
 }
@@ -72,7 +73,7 @@ void Cycle_channels(struct channel* channelPtrs[16], struct Loop_Master* loopIn)
 			//printf("\tplaying channel %d\n\r", i);
 			if(channelPtrs[i]->data[loopIn->count] != 0xFF) {
 				noteOff(channelPtrs[i], channelPtrs[i]->lastPlayed, 0);
-				noteOn(channelPtrs[i], channelPtrs[i]->data[loopIn->count], 40);
+				noteOn(channelPtrs[i], channelPtrs[i]->data[loopIn->count], channelPtrs[i]->attack[loopIn->count]);
 			}
 			else {//if(channels[i]->data[Loop.count] == 0){
 				noteOff(channelPtrs[i], channelPtrs[i]->lastPlayed, 0);
@@ -138,7 +139,7 @@ size_t readKeypad(uint8_t* buffer) {
 }
 
 uint8_t instrumentSelect(uint8_t* buffer) {
-	uint8_t instrument = 0;
+	uint8_t instrument = 1;
 	switch(buffer[0]) {
 	case '0':
 		instrument = 1;
@@ -413,11 +414,11 @@ void VGA_init() {
 	}
 }
 void VGA_write(uint8_t button, uint8_t color) {
-	uint32_t data = 0x00000000 | (button << 4) | color;
+	uint32_t data = (button << 4) | color;
 
 	int i = 0;
 	while(i < 10) {
-		*((uint32_t*)VGA_DISPLAY_ADDRESS) = data;//0xF0000000 & (button << 4) & color;
+		*((uint32_t*)VGA_DISPLAY_ADDRESS) = data;
 		++i;
 	}
 	return;
@@ -592,14 +593,16 @@ void play_samples(mymode_t MODE){
 */
 void ACE_PC0_Flag0_IRQHandler(){
 	//dac_irq = 1;
-	uint8_t data[2];
+	//uint8_t data[2];
 	uint32_t data_out = 0;
-	static uint8_t hold = 0;
+	//static uint8_t hold = 0;
 
 	data_out = envm[envm_idx];
 	envm_idx += 1;
 
-	ACE_set_sdd_value(SDD1_OUT, data_out);
-	ACE_clear_sse_irq(PC0_FLAG0);
+	if(playVoice){
+		ACE_set_sdd_value(SDD1_OUT, data_out);
+		ACE_clear_sse_irq(PC0_FLAG0);
+	}
 }
 

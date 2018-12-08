@@ -12,7 +12,8 @@ struct Loop_Master Loop = {
 		0,
 		-1,
 		{0xBB, 0xBB},
-		{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
+		//{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
+		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
 		{0},
 		{0xFFFFFFFF},
 		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
@@ -57,10 +58,15 @@ void Timer1_IRQHandler() {
 
 	if(Loop.buttonsBuffer[0] & 0x01) {
 		printf("PAUSED\n\r");
-		VGA_write(4, 7);
+		//VGA_write(4, 7);
 		GLOBAL_PAUSE_FLAG = ~GLOBAL_PAUSE_FLAG;
-		if(!GLOBAL_PAUSE_FLAG && Loop.channelsPlaying[10]){
+		if(GLOBAL_PAUSE_FLAG == 0 && Loop.channelsPlaying[10]){
 			ACE_enable_sse_irq(PC0_FLAG0);
+			playVoice = 1;
+		}
+		else if(GLOBAL_PAUSE_FLAG != 0 && Loop.channelsPlaying[10]){
+			ACE_disable_sse_irq(PC0_FLAG0);
+			playVoice = 0;
 		}
 	}
 
@@ -89,6 +95,7 @@ void Timer1_IRQHandler() {
 			 VGA_init();
 			 ++i;
 		 }
+		 playVoice = 0;
 		 printf("MUTED ALL CHANNELS\n\r");
 	}
 
@@ -151,19 +158,13 @@ void Timer1_IRQHandler() {
 	// check for a touchscreen press
 	if(Loop.touchscreenButtonPressed != 255) {
 		uint8_t color = (Loop.channelsPlaying[Loop.selectedChannel]) ? VGA_GREEN : VGA_RED;
-		//int i = 0;
-		//while(i<10){
-			VGA_write(Loop.selectedChannel, color);
-		//	i++;
-		//}
+
+		VGA_write(Loop.selectedChannel, color);
+
 
 		Loop.selectedChannel = Loop.touchscreenButtonPressed;
 
-		//i = 0;
-		//while(i<10){
-			VGA_write(Loop.selectedChannel, VGA_YELLOW);
-		//	i++;
-		//}
+		VGA_write(Loop.selectedChannel, VGA_YELLOW);
 
 		printf("Button Pressed: %d\n\r", Loop.touchscreenButtonPressed);
 	}
@@ -185,7 +186,13 @@ void Timer1_IRQHandler() {
 
 	if(Loop.recordingMode != 0) {
 		uint32_t data = readSensor();
-		//printf("distance: %d\n\r", data);
+		uint32_t attack = readIMU();
+		if(attack>3500){
+			attack = 3500;
+		}
+		else if(attack<1500){
+			attack = 1500;
+		}
 		if(Loop.selectedChannel == 9) { // special setup for drums
 			if((data <= 16)) {
 				channels[Loop.selectedChannel]->data[Loop.count] = 35; // bass
@@ -213,6 +220,8 @@ void Timer1_IRQHandler() {
 				channels[Loop.selectedChannel]->data[Loop.count] = readSensor() + 12;
 			}
 		}
+
+		channels[Loop.selectedChannel]->attack[Loop.count] = (attack - 1500) / 16;
 	}
 
 
@@ -240,7 +249,7 @@ void test_library() {
 
 		readTouch(&Loop);
 
-		VGA_test();
+		//VGA_test();
 
 
 
