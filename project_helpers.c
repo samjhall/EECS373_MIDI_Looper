@@ -57,6 +57,7 @@ void Update_metronome(struct Loop_Master* loopIn) {
 			loopIn->recordingMode = ~loopIn->recordingMode;
 			if(loopIn->selectedChannel == 10){
 				recordVoice = 0;
+				voiceRecorded = 1;
 				envm_idx_max = envm_idx;
 			}
 		}
@@ -69,18 +70,20 @@ void Update_metronome(struct Loop_Master* loopIn) {
 void Cycle_channels(struct channel* channelPtrs[16], struct Loop_Master* loopIn) {
 	int i = 0;
 	while (i < 16) {
-		if(loopIn->channelsPlaying[i]){
-			//printf("\tplaying channel %d\n\r", i);
-			if(channelPtrs[i]->data[loopIn->count] != 0xFF) {
-				noteOff(channelPtrs[i], channelPtrs[i]->lastPlayed, 0);
-				noteOn(channelPtrs[i], channelPtrs[i]->data[loopIn->count], channelPtrs[i]->attack[loopIn->count]);
+		if(i != 10){
+			if(loopIn->channelsPlaying[i]){
+				//printf("\tplaying channel %d\n\r", i);
+				if(channelPtrs[i]->data[loopIn->count] != 0xFF) {
+					noteOff(channelPtrs[i], channelPtrs[i]->lastPlayed, 0);
+					noteOn(channelPtrs[i], channelPtrs[i]->data[loopIn->count], channelPtrs[i]->attack[loopIn->count]);
+				}
+				else {//if(channels[i]->data[Loop.count] == 0){
+					noteOff(channelPtrs[i], channelPtrs[i]->lastPlayed, 0);
+				}
 			}
-			else {//if(channels[i]->data[Loop.count] == 0){
+			else {
 				noteOff(channelPtrs[i], channelPtrs[i]->lastPlayed, 0);
 			}
-		}
-		else {
-			noteOff(channelPtrs[i], channelPtrs[i]->lastPlayed, 0);
 		}
 		++i;
 	}
@@ -454,6 +457,7 @@ void Mic_init(){
 	mymode = NORMAL;
 	recordVoice = 0;
 	playVoice = 0;
+	voiceRecorded = 0;
 	envm_idx = 0;
 	envm_idx_max = 1000000000;
 	dac_irq = 0;
@@ -483,7 +487,7 @@ void Mic_init(){
 
 	NVIC_EnableIRQ( DMA_IRQn );
 
-	free_samples(recordVoice);
+	free_samples(0);
 }
 
 
@@ -600,9 +604,9 @@ void ACE_PC0_Flag0_IRQHandler(){
 	data_out = envm[envm_idx];
 	envm_idx += 1;
 
-	if(playVoice){
+	if(playVoice && voiceRecorded && envm_idx<=envm_idx_max){
 		ACE_set_sdd_value(SDD1_OUT, data_out);
-		ACE_clear_sse_irq(PC0_FLAG0);
 	}
+	ACE_clear_sse_irq(PC0_FLAG0);
 }
 

@@ -51,7 +51,7 @@ uint8_t GLOBAL_PAUSE_FLAG = 0;
 void Timer1_IRQHandler() {
 	// check the four function buttons
 	// check for pause
-
+	printf("--------COUNT: %d--------\n\r", Loop.count);
 	printf("distance: %d\n\r	imu: %d\n\r", readSensor(), readIMU());
 
 	Loop.buttonsBuffer[0] = readButtons();
@@ -72,14 +72,29 @@ void Timer1_IRQHandler() {
 
 	if(Loop.buttonsBuffer[0] & 0x02) {
 		Clear_channel(channels[Loop.selectedChannel]);
+		if(Loop.selectedChannel == 10){
+			free_samples(0);
+			envm_idx_max = 0;
+			voiceRecorded = 0;
+			playVoice = 0;
+			recordVoice = 0;
+			ACE_disable_sse_irq(PC0_FLAG0);
+		}
 		printf("CHANNEL %d CLEARED\n\r", Loop.selectedChannel);
 	}
+
 	if(Loop.buttonsBuffer[0] & 0x04) {
 		int i = 0;
 		while (i < 16) {
 			Clear_channel(channels[i]);
 			++i;
 		}
+		envm_idx_max = 0;
+		voiceRecorded = 0;
+		playVoice = 0;
+		recordVoice = 0;
+		ACE_disable_sse_irq(PC0_FLAG0);
+		//free_samples(0);
 		if(Loop.recordingMode != 0) {
 			Loop.recordingMode = ~Loop.recordingMode;
 		}
@@ -92,9 +107,9 @@ void Timer1_IRQHandler() {
 		 int i = 0;
 		 while(i < 16) {
 			 Loop.channelsPlaying[i] = 0;
-			 VGA_init();
 			 ++i;
 		 }
+		 VGA_init();
 		 playVoice = 0;
 		 printf("MUTED ALL CHANNELS\n\r");
 	}
@@ -111,6 +126,7 @@ void Timer1_IRQHandler() {
 	if(Loop.count == 0){
 		envm_idx = 0;
 		if(Loop.recordingMode != 0 && Loop.selectedChannel == 10){
+			free_samples(0);
 			ACE_disable_sse_irq(PC0_FLAG0);
 			recordVoice = 1;
 			playVoice = 0;
@@ -129,6 +145,9 @@ void Timer1_IRQHandler() {
 		Loop.channelsPlaying[Loop.selectedChannel] = 1;
 		Loop.recordingMode = ~Loop.recordingMode;
 		Loop.count = 0;
+		if(Loop.selectedChannel == 10 && (playVoice ||voiceRecorded)){
+			free_samples(0);
+		}
 
 		MSS_TIM1_clear_irq();
 		return;
@@ -139,6 +158,7 @@ void Timer1_IRQHandler() {
 		if(Loop.selectedChannel == 10){
 			recordVoice = 0;
 			envm_idx_max = envm_idx;
+			voiceRecorded = 1;
 		}
 		Loop.count = 0;
 		MSS_TIM1_clear_irq();
@@ -148,6 +168,9 @@ void Timer1_IRQHandler() {
 
 	if(Loop.selectedChannel == Loop.touchscreenButtonPressed){
 		printf("TOGGLING CHANNEL %d\n\r", Loop.selectedChannel);
+		if(Loop.selectedChannel == 10 && Loop.channelsPlaying[10] == 0){
+			ACE_enable_sse_irq(PC0_FLAG0);
+		}
 		if(Loop.selectedChannel == 10){
 			playVoice = !playVoice;
 		}
@@ -157,8 +180,13 @@ void Timer1_IRQHandler() {
 
 	// check for a touchscreen press
 	if(Loop.touchscreenButtonPressed != 255) {
-		uint8_t color = (Loop.channelsPlaying[Loop.selectedChannel]) ? VGA_GREEN : VGA_RED;
-
+		uint8_t color = 0;
+		if(Loop.selectedChannel!=10){
+			color = (Loop.channelsPlaying[Loop.selectedChannel]) ? VGA_GREEN : VGA_RED;
+		}
+		else{
+			color = (playVoice) ? VGA_GREEN : VGA_RED;
+		}
 		VGA_write(Loop.selectedChannel, color);
 
 

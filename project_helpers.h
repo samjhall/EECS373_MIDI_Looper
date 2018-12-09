@@ -62,6 +62,7 @@ uint32_t samples_buffer[NB_OF_SAMPLE_BUFFERS][SAMPLES_BUFFER_SIZE];
 uint8_t buffer_status[NB_OF_SAMPLE_BUFFERS];
 uint8_t recordVoice;
 uint8_t playVoice;
+uint8_t voiceRecorded;
 uint32_t envm_idx_max;
 
 void Global_init(); // calls every device's initializer
