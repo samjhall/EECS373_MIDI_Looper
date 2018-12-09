@@ -35,6 +35,7 @@ void Clear_channel(struct channel* channel) {
 
 void Fill_channel(struct channel* channel) {
 	channel->programNumber = 0;
+	channel->button = 0;
 	channel->lastPlayed = 0;
 	Clear_channel(channel);
 }
@@ -214,34 +215,168 @@ void clearCharDisplay() {
 	sendCharDisplay(clearBuffer, 2);
 }
 
-void charDisplayData(struct Loop_Master* loopIn, uint32_t distance) {
+void charDisplayData(struct Loop_Master* loopIn, struct channel* channelPtrs[NUM_MEASURES * 8], uint32_t distance) {
 	uint8_t hex[16] = {'0', '1', '2', '3',
 						'4', '5', '6', '7',
 						'8', '9', 'A', 'B',
 						'C', 'D', 'E', 'F'};
 
 	uint8_t display[4][20];
+
+	int a = 0;
+	while(a < 4){
+		int b = 0;
+		while(b < 20) {
+			display[a][b] = ' ';
+			++b;
+		}
+		++a;
+	}
+
 	// need to prepare this then send it
 
-	// reset the cursor
-	uint8_t resetCursor[2] = {0xFE, 0x80};
-	sendCharDisplay(resetCursor, 2);
+	//clearCharDisplay();
 
-	int channel = 0;
+	// reset the cursor
+	//uint8_t resetCursor[2] = {0xFE, 0x80};
+	//sendCharDisplay(resetCursor, 2);
+
+	// set channelsPlaying
 	int row = 0;
+
+	display[0][1] = loopIn->channelsRecorded[0] ? '0' : 'X';
+	display[0][3] = loopIn->channelsRecorded[1] ? '1' : 'X';
+	display[0][5] = loopIn->channelsRecorded[2] ? '2' : 'X';
+	display[0][7] = loopIn->channelsRecorded[3] ? '3' : 'X';
+
+	display[1][1] = loopIn->channelsRecorded[4] ? '4' : 'X';
+	display[1][3] = loopIn->channelsRecorded[5] ? '5' : 'X';
+	display[1][5] = loopIn->channelsRecorded[6] ? '6' : 'X';
+	display[1][7] = loopIn->channelsRecorded[7] ? '7' : 'X';
+
+	display[2][1] = loopIn->channelsRecorded[8] ? '8' : 'X';
+	display[2][3] = loopIn->channelsRecorded[9] ? '9' : 'X';
+	display[2][5] = loopIn->channelsRecorded[10] ? 'A' : 'X';
+	display[2][7] = loopIn->channelsRecorded[11] ? 'B' : 'X';
+
+	display[3][1] = loopIn->channelsRecorded[12] ? 'C' : 'X';
+	display[3][3] = loopIn->channelsRecorded[13] ? 'D' : 'X';
+	display[3][5] = loopIn->channelsRecorded[14] ? 'E' : 'X';
+	display[3][7] = loopIn->channelsRecorded[15] ? 'F' : 'X';
+
+
+
+	// set the divider between channelsPlaying and status info
+	row = 0;
 	while(row < 4) {
-		int column = 1;
-		while(column < 8) {
-			if(loopIn->channelsPlaying[channel]) {
-				display[row][column] = hex[channel];
-			}
-			else {
-				display[row][column] = 'X';
-			}
-			++column;
-		}
+		display[row][8] = ']';
 		++row;
 	}
+
+	// DEBUGGING
+/*	row = 0;
+	while(row < 4) {
+		printf("%s\n\r", display[row]);
+		sendCharDisplay(display[row], sizeof(display[row]));
+		++row;
+	}*/
+
+	// set channel line
+	display[0][9] = 'C';
+	display[0][10] = 'h';
+	display[0][11] = 'a';
+	display[0][12] = 'n';
+	display[0][13] = 'n';
+	display[0][14] = 'e';
+	display[0][15] = 'l';
+	display[0][16] = ' ';
+	display[0][17] = ' ';
+	display[0][18] = ' ';
+	display[0][19] = hex[loopIn->selectedChannel];
+
+	// set parse line
+	display[1][9] = 'P';
+	display[1][10] = 'a';
+	display[1][11] = 't';
+	display[1][12] = 'c';
+	display[1][13] = 'h';
+	display[1][14] = ' ';
+	display[1][15] = ' ';
+	display[1][16] = ' ';
+	display[1][17] = ' ';
+	display[1][18] = ' ';
+	display[1][19] = channelPtrs[loopIn->selectedChannel]->button;
+
+
+	// set distance line
+	if(distance > 80) {
+		distance = 80;
+	}
+	int lsb = distance % 10;
+	int msb = (distance - lsb) / 10;
+
+	display[2][9] = 'D';
+	display[2][10] = 'i';
+	display[2][11] = 's';
+	display[2][12] = 't';
+	display[2][13] = 'a';
+	display[2][14] = 'n';
+	display[2][15] = 'c';
+	display[2][16] = 'e';
+	display[2][17] = ' ';
+	display[2][18] = msb + 48;
+	display[2][19] = lsb + 48;
+
+	/*
+	char pause[11] = 'PAUSED     ';
+	char muted[11] = 'MUTED      '; // set by looking at channelsPlaying
+	char mutedAll[11] = 'MUTED ALL  ';
+	char clear[11] = 'CLEARED    ';
+	char clearAll[11] = 'CLEARED ALL';
+	char recording[11] = 'RECORDING  ';
+	*/
+	uint8_t statusNumber = 6;
+	char status[7][11] = {"PAUSED     ", "MUTED      ",
+							"MUTED ALL  ", "CLEARED    ",
+							"CLEARED ALL", "RECORDING  ",
+							"PLAYING    "};
+
+	if(loopIn->paused != 0) { // paused
+		statusNumber = 0;
+	} else if(loopIn->buttonsBuffer[0] & 0x02) { // clear channel
+		statusNumber = 3;
+	} else if(loopIn->buttonsBuffer[0] & 0x04) { // clear all
+		statusNumber = 4;
+	} else if(loopIn->buttonsBuffer[0] & 0x08 || loopIn->recordingMode) { // recording
+		statusNumber = 5;
+	} else if(!loopIn->channelsPlaying[loopIn->selectedChannel]) { // muted
+		statusNumber = 1;
+	} else {
+		if(loopIn->buttonsBuffer[0] & 0x10) { // muted all
+			statusNumber = 2;
+		}
+		else {
+			statusNumber = 6;
+		}
+	}
+
+	uint8_t index = 9;
+	while(index < 20) {
+		display[3][index] = status[statusNumber][index-9];
+		++index;
+	}
+
+	//printf("done\n\r");
+
+	row = 0;
+	while(row < 4) {
+		//printf("%s\n\r", display[row]);
+		sendCharDisplay(display[row], sizeof(display[row]));
+		++row;
+	}
+	//printf("done\n\r");
+
+	return;
 }
 
 
@@ -552,54 +687,9 @@ void process_samples(){
 		envm_idx += SAMPLES_BUFFER_SIZE;
 	}
 }
-/*
-void play_samples(mymode_t MODE){
-	uint8_t data[2];
-	uint32_t data_out = 0;
-	static uint8_t hold = 0;
-	if (dac_irq){
-		if (MODE==NORMAL){
-			data_out = envm[envm_idx];
-			envm_idx += 1;
-		}
-		else if (MODE==DOUBLE){
-			data[0] = envm[envm_idx];
-			data[1] = envm[envm_idx+1];
-			data_out = (data[0]+data[1])>>1;
-			envm_idx += 2;
-		}
-		else if(MODE == QUAD){
-			data[0] = envm[envm_idx];
-			data[1] = envm[envm_idx+1];
-			data[2] = envm[envm_idx+2];
-			data[3] = envm[envm_idx+3];
-			data_out = (data[0]+data[1]+data[2]+data[3])>>2;
-			envm_idx += 4;
-		}
-		else if (MODE==HALF){
-			data_out = envm[envm_idx];
-			if (hold){
-				hold = 0;
-				envm_idx += 1;
-			}
-			else
-				hold = 1;
 
-		}
-		else if (MODE==BACK){
-			data_out = envm[(TOTAL_SAMPLE_SIZE - envm_idx)];
-			envm_idx += 1;
-		}
-		ACE_set_sdd_value(SDD1_OUT, data_out);
-		dac_irq = 0;
-	}
-}
-*/
 void ACE_PC0_Flag0_IRQHandler(){
-	//dac_irq = 1;
-	//uint8_t data[2];
 	uint32_t data_out = 0;
-	//static uint8_t hold = 0;
 
 	data_out = envm[envm_idx];
 	envm_idx += 1;

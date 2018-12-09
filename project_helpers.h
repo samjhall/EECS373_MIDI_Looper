@@ -70,6 +70,7 @@ void Global_init(); // calls every device's initializer
 struct channel {
 	uint8_t channelNumber;
 	uint8_t programNumber;
+	uint8_t button;
 	uint8_t lastPlayed;
 	uint8_t data[NUM_MEASURES * NOTES_PER_MEASURE]; // eighth notes
 	uint32_t attack[NUM_MEASURES * NOTES_PER_MEASURE];
@@ -82,9 +83,11 @@ struct Loop_Master { // the "Master" object for the project
 	
 	uint8_t selectedChannel;
 	uint8_t recordingMode; // should be FF if in recording mode, 0 else
+	uint8_t paused;
 	uint8_t touchscreenButtonPressed;
 	
 	uint8_t keypadBuffer[2];
+	uint8_t channelsRecorded[16];
 	uint8_t channelsPlaying[16];
 	uint32_t buttonsBuffer[1];
 	uint32_t distanceBuffer[1];
@@ -126,7 +129,7 @@ size_t readKeypad(uint8_t* buffer);
 uint8_t instrumentSelect(uint8_t* buffer);
 void sendCharDisplay(uint8_t* buffer, uint8_t size);
 void clearCharDisplay(); // clears the entire display
-void charDisplayData(struct Loop_Master* loopIn, uint32_t distance);
+void charDisplayData(struct Loop_Master* loopIn, struct channel* channelPtrs[NUM_MEASURES * 8], uint32_t distance);
 
 
 /***	DISTANCE SENSOR	***/

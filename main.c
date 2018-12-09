@@ -10,9 +10,10 @@ struct Loop_Master Loop = {
 		NUM_MEASURES * NOTES_PER_MEASURE,
 		0,
 		0,
+		0,
 		-1,
 		{0xBB, 0xBB},
-		//{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
+		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
 		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
 		{0},
 		{0xFFFFFFFF},
@@ -45,26 +46,28 @@ struct channel* channels[16] = {&channel0, &channel1, &channel2, &channel3,
 								&channel8, &channel9, &channel10, &channel11,
 								&channel12, &channel13, &channel14, &channel15};
 
-uint8_t GLOBAL_PAUSE_FLAG = 0;
 
 // This will be the main "driver" function as most of the work will be done between interrupts
 void Timer1_IRQHandler() {
 	// check the four function buttons
 	// check for pause
+
+	Loop.distanceBuffer[0] = readSensor();
 	printf("--------COUNT: %d--------\n\r", Loop.count);
-	printf("distance: %d\n\r	imu: %d\n\r", readSensor(), readIMU());
+	printf("distance: %d\n\r	imu: %d\n\r", Loop.distanceBuffer[0], readIMU());
+
+	charDisplayData(&Loop, channels, Loop.distanceBuffer[0]);
 
 	Loop.buttonsBuffer[0] = readButtons();
 
 	if(Loop.buttonsBuffer[0] & 0x01) {
 		printf("PAUSED\n\r");
-		//VGA_write(4, 7);
-		GLOBAL_PAUSE_FLAG = ~GLOBAL_PAUSE_FLAG;
-		if(GLOBAL_PAUSE_FLAG == 0 && Loop.channelsPlaying[10]){
+		Loop.paused = !Loop.paused;
+		if(Loop.paused == 0 && Loop.channelsPlaying[10]){
 			ACE_enable_sse_irq(PC0_FLAG0);
 			playVoice = 1;
 		}
-		else if(GLOBAL_PAUSE_FLAG != 0 && Loop.channelsPlaying[10]){
+		else if(Loop.paused != 0 && Loop.channelsPlaying[10]){
 			ACE_disable_sse_irq(PC0_FLAG0);
 			playVoice = 0;
 		}
@@ -72,6 +75,7 @@ void Timer1_IRQHandler() {
 
 	if(Loop.buttonsBuffer[0] & 0x02) {
 		Clear_channel(channels[Loop.selectedChannel]);
+		Loop.channelsRecorded[Loop.selectedChannel] = 0;
 		if(Loop.selectedChannel == 10){
 			free_samples(0);
 			envm_idx_max = 0;
@@ -87,6 +91,7 @@ void Timer1_IRQHandler() {
 		int i = 0;
 		while (i < 16) {
 			Clear_channel(channels[i]);
+			Loop.channelsRecorded[i] = 0;
 			++i;
 		}
 		envm_idx_max = 0;
@@ -94,7 +99,6 @@ void Timer1_IRQHandler() {
 		playVoice = 0;
 		recordVoice = 0;
 		ACE_disable_sse_irq(PC0_FLAG0);
-		//free_samples(0);
 		if(Loop.recordingMode != 0) {
 			Loop.recordingMode = ~Loop.recordingMode;
 		}
@@ -114,7 +118,7 @@ void Timer1_IRQHandler() {
 		 printf("MUTED ALL CHANNELS\n\r");
 	}
 
-	if(GLOBAL_PAUSE_FLAG != 0) { // user should be able to clear when paused, but not record
+	if(Loop.paused != 0) { // user should be able to clear when paused, but not record
 		printf("PAUSED\n\r");
 		allNotesOff();
 		ACE_disable_sse_irq(PC0_FLAG0);
@@ -142,6 +146,7 @@ void Timer1_IRQHandler() {
 	//Start Recording
 	if((Loop.buttonsBuffer[0] & 0x08) && (Loop.recordingMode == 0)) { // set recordingMode to "on" and restart the metronome
 		printf("RECORDING ON CHANNEL %d\n\r", Loop.selectedChannel);
+		Loop.channelsRecorded[Loop.selectedChannel] = 1;
 		Loop.channelsPlaying[Loop.selectedChannel] = 1;
 		Loop.recordingMode = ~Loop.recordingMode;
 		Loop.count = 0;
@@ -206,6 +211,7 @@ void Timer1_IRQHandler() {
 			&& (program != 255)
 			&& (Loop.keypadBuffer[0] != Loop.keypadBuffer[1])) {
 		printf("CHANGE TO %d\n\r", program);
+		channels[Loop.selectedChannel]->button = Loop.keypadBuffer[0];
 		programChange(channels[Loop.selectedChannel], program);
 		channels[Loop.selectedChannel]->programNumber = program;
 	}
@@ -241,11 +247,13 @@ void Timer1_IRQHandler() {
 			}
 		}
 		else {
-			if((data > 72) || (data < 8)) { // total width of 64
-				channels[Loop.selectedChannel]->data[Loop.count] = -1;
-			}
-			else {
-				channels[Loop.selectedChannel]->data[Loop.count] = readSensor() + 12;
+			if(Loop.selectedChannel != 10) { // need to make sure channel 10 doesnt play
+				if((data > 72) || (data < 8)) { // total width of 64
+					channels[Loop.selectedChannel]->data[Loop.count] = -1;
+				}
+				else {
+					channels[Loop.selectedChannel]->data[Loop.count] = readSensor() + 12;
+				}
 			}
 		}
 
@@ -255,8 +263,7 @@ void Timer1_IRQHandler() {
 
 
 	Cycle_channels(channels, &Loop);
-	uint8_t charBuffer[4] = {32, Loop.keypadBuffer[0], 32, Loop.selectedChannel+48};
-	sendCharDisplay(charBuffer, sizeof(charBuffer));
+	//charDisplayData(&Loop, channels, Loop.distanceBuffer[0]);
 
 	Update_metronome(&Loop);
 	MSS_TIM1_clear_irq();
@@ -269,7 +276,8 @@ void test_library() {
 
 	clearCharDisplay();
 
-	Timer_set_and_start(25000000); // 1 second = 100 000 000
+	Timer_set_and_start(25000000);
+	//Timer_set_and_start(25000000); // 1 second = 100 000 000
 	//Timer_set_and_start(12500000);
 
 	while(1) {
@@ -277,29 +285,11 @@ void test_library() {
 
 		readTouch(&Loop);
 
-		//VGA_test();
-
-
-
-		/*** MICROPHONE ***/
-		/*
-		ace_channel_handle_t adc_handler2 = ACE_get_channel_handle((const uint8_t *)"ADCDirectInput_2");
-		uint16_t adc_data2 = ACE_get_ppe_sample(adc_handler2);
-		printf("Here it is: %d\n\r", (int)adc_data2);
-		*/
-
 		if (recordVoice==1){
 			process_samples();
 		}
-		//else{
-		//	play_samples(mymode);
-		//}
-
 		if (envm_idx>=envm_idx_max){
 			ACE_disable_sse_irq(PC0_FLAG0);
-			//else {
-			//	ACE_enable_sse_irq(PC0_FLAG0);
-			//}
 		}
 
 	}
@@ -308,6 +298,9 @@ void test_library() {
 
 int main()
 {
+	// set interrupt priorities
+	//NVIC_SetPriority(Timer1_IRQn, 10);
+	//NVIC_SetPriority(ACE_PC0_Flag0_IRQn, 9);
 
 	//Important stuff
 	printf("test\n"); // test UART0
