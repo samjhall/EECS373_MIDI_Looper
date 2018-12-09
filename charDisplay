@@ -1,0 +1,123 @@
+void charDisplayData(struct Loop_Master* loopIn, struct channel* channelPtrs[NUM_MEASURES * 8], uint32_t distance) {
+	uint8_t hex[16] = {'0', '1', '2', '3',
+						'4', '5', '6', '7',
+						'8', '9', 'A', 'B',
+						'C', 'D', 'E', 'F'};
+
+	uint8_t display[4][20];
+	// need to prepare this then send it
+
+	// reset the cursor
+	uint8_t resetCursor[2] = {0xFE, 0x80};
+	sendCharDisplay(resetCursor, 2);
+
+	// set channelsPlaying
+	int channel = 0;
+	int row = 0;
+	while(row < 4) {
+		int column = 1;
+		while(column < 8) {
+			if(loopIn->channelsPlaying[channel]) {
+				display[row][column] = hex[channel];
+			}
+			else {
+				display[row][column] = 'X';
+			}
+			++column;
+		}
+		++row;
+	}
+
+	// set the divider between channelsPlaying and status info
+	row = 0;
+	while(row < 4) {
+		display[row][8] = '|';
+		++row;
+	}
+
+	// set channel line
+	display[0][9] = 'C';
+	display[0][10] = 'h';
+	display[0][11] = 'a';
+	display[0][12] = 'n';
+	display[0][13] = 'n';
+	display[0][14] = 'e';
+	display[0][15] = 'l';
+	display[0][16] = ' ';
+	display[0][17] = ' ';
+	display[0][18] = ' ';
+	display[0][19] = hex[loopIn->selectedChannel];
+
+	// set parse line
+	display[1][9] = 'P';
+	display[1][10] = 'a';
+	display[1][11] = 't';
+	display[1][12] = 'c';
+	display[1][13] = 'h';
+	display[1][14] = ' ';
+	display[1][15] = ' ';
+	display[1][16] = ' ';
+	display[1][17] = ' ';
+	display[1][18] = ' ';
+	display[1][19] = hex[channelPtrs[loopIn->selectedChannel]->button];
+
+
+	// set distance line
+	int lsb = distance % 10;
+	int msb = (distance - lsb) / 10;
+
+	display[2][9] = 'D';
+	display[2][10] = 'i';
+	display[2][11] = 's';
+	display[2][12] = 't';
+	display[2][13] = 'a';
+	display[2][14] = 'n';
+	display[2][15] = 'c ';
+	display[2][16] = 'e';
+	display[2][17] = ' ';
+	display[2][18] = lsb + 48;
+	display[2][19] = msb + 48;
+
+	/*
+	char pause[11] = 'PAUSED     ';
+	char muted[11] = 'MUTED      '; // set by looking at channelsPlaying
+	char mutedAll[11] = 'MUTED ALL  ';
+	char clear[11] = 'CLEARED    ';
+	char clearAll[11] = 'CLEARED ALL';
+	char recording[11] = 'RECORDING  ';
+	*/
+	uint8_t statusNumber = 6;
+	char status[7][11] = {'PAUSED     ', 'MUTED      ',
+							'MUTED ALL  ', 'CLEARED    ',
+							'CLEARED ALL', 'RECORDING  ',
+							'PLAYING    '};
+
+	if(Loop.buttonsBuffer[0] & 0x01) { // paused
+		statusNumber = 0;
+	} else if(Loop.buttonsBuffer[0] & 0x02) { // clear channel
+		statusNumber = 1;
+	} else if(Loop.buttonsBuffer[0] & 0x04) { // clear all
+		statusNumber = 2;
+	} else if(Loop.buttonsBuffer[0] & 0x08) { // recording
+		statusNumber = 3;
+	} else if(Loop.buttonsBuffer[0] & 0x10) { // muted all
+		statusNumber = 4;
+	} else {
+		if(!loopIn->channelsPlaying[loopIn->selectedChannel]) { // muted
+			statusNumber = 5;
+		}
+		statusNumber = 6;
+	}
+
+	uint8_t index = 9;
+	while(index < 20) {
+		display[3][index] = status[statusNumber][index];
+	}
+
+	row = 0;
+	while(row < 4) {
+		sendCharDisplay(display[row], sizeof(display[row]));
+		++row;
+	}
+
+}
