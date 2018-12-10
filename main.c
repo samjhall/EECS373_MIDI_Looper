@@ -53,16 +53,37 @@ void Timer1_IRQHandler() {
 	// check for pause
 
 	Loop.distanceBuffer[0] = readSensor();
-	printf("--------COUNT: %d--------\n\r", Loop.count);
-	printf("distance: %d\n\r	imu: %d\n\r", Loop.distanceBuffer[0], readIMU());
-
-	charDisplayData(&Loop, channels, Loop.distanceBuffer[0]);
-
+	//printf("--------COUNT: %d--------\n\r", Loop.count);
+	//printf("distance: %d\n\r	imu: %d\n\r", Loop.distanceBuffer[0], readIMU());
+	if(!recordVoice){
+		charDisplayData(&Loop, channels, Loop.distanceBuffer[0]);
+	}
 	Loop.buttonsBuffer[0] = readButtons();
+
+	// instrument selection from the keypad
+	Loop.keypadBuffer[1] = Loop.keypadBuffer[0];
+	readKeypad(Loop.keypadBuffer);
+	uint8_t program = instrumentSelect(Loop.keypadBuffer);
+	if((program != channels[Loop.selectedChannel]->programNumber)
+			&& (program != 255)
+			&& (Loop.keypadBuffer[0] != Loop.keypadBuffer[1])) {
+		printf("CHANGE TO %d\n\r", program);
+		channels[Loop.selectedChannel]->button = Loop.keypadBuffer[0];
+		programChange(channels[Loop.selectedChannel], program);
+		channels[Loop.selectedChannel]->programNumber = program;
+	}
 
 	if(Loop.buttonsBuffer[0] & 0x01) {
 		printf("PAUSED\n\r");
 		Loop.paused = !Loop.paused;
+
+		int  clear = 0;
+		while(clear < 16) {
+			noteOff(channels[clear], channels[clear]->data[Loop.shadow], 0);
+			noteOff(channels[clear], channels[clear]->data[Loop.count], 0);
+			++clear;
+		}
+
 		if(Loop.paused == 0 && Loop.channelsPlaying[10]){
 			ACE_enable_sse_irq(PC0_FLAG0);
 			playVoice = 1;
@@ -84,6 +105,11 @@ void Timer1_IRQHandler() {
 			recordVoice = 0;
 			ACE_disable_sse_irq(PC0_FLAG0);
 		}
+
+		if(Loop.recordingMode != 0) {
+			Loop.recordingMode = ~Loop.recordingMode;
+		}
+
 		printf("CHANNEL %d CLEARED\n\r", Loop.selectedChannel);
 	}
 
@@ -102,6 +128,11 @@ void Timer1_IRQHandler() {
 		if(Loop.recordingMode != 0) {
 			Loop.recordingMode = ~Loop.recordingMode;
 		}
+
+		if(Loop.recordingMode != 0) {
+			Loop.recordingMode = ~Loop.recordingMode;
+		}
+
 		allNotesOff();
 		reset();
 		printf("ALL CHANNELS CLEARED\n\r");
@@ -178,6 +209,7 @@ void Timer1_IRQHandler() {
 		}
 		if(Loop.selectedChannel == 10){
 			playVoice = !playVoice;
+			Loop.channelsPlaying[Loop.selectedChannel] = !Loop.channelsPlaying[Loop.selectedChannel];
 		}
 		else
 			Loop.channelsPlaying[Loop.selectedChannel] = !Loop.channelsPlaying[Loop.selectedChannel];
@@ -193,27 +225,10 @@ void Timer1_IRQHandler() {
 			color = (playVoice) ? VGA_GREEN : VGA_RED;
 		}
 		VGA_write(Loop.selectedChannel, color);
-
-
 		Loop.selectedChannel = Loop.touchscreenButtonPressed;
-
 		VGA_write(Loop.selectedChannel, VGA_YELLOW);
 
-		printf("Button Pressed: %d\n\r", Loop.touchscreenButtonPressed);
-	}
-
-
-	// instrument selection from the keypad
-	Loop.keypadBuffer[1] = Loop.keypadBuffer[0];
-	readKeypad(Loop.keypadBuffer);
-	uint8_t program = instrumentSelect(Loop.keypadBuffer);
-	if((program != channels[Loop.selectedChannel]->programNumber)
-			&& (program != 255)
-			&& (Loop.keypadBuffer[0] != Loop.keypadBuffer[1])) {
-		printf("CHANGE TO %d\n\r", program);
-		channels[Loop.selectedChannel]->button = Loop.keypadBuffer[0];
-		programChange(channels[Loop.selectedChannel], program);
-		channels[Loop.selectedChannel]->programNumber = program;
+		//printf("Button Pressed: %d\n\r", Loop.touchscreenButtonPressed);
 	}
 
 
@@ -276,15 +291,13 @@ void test_library() {
 
 	clearCharDisplay();
 
-	Timer_set_and_start(25000000);
-	//Timer_set_and_start(25000000); // 1 second = 100 000 000
+	Timer_set_and_start(25000000); // 1 second = 100 000 000
 	//Timer_set_and_start(12500000);
 
 	while(1) {
 
 
 		readTouch(&Loop);
-
 		if (recordVoice==1){
 			process_samples();
 		}
@@ -299,12 +312,13 @@ void test_library() {
 int main()
 {
 	// set interrupt priorities
-	//NVIC_SetPriority(Timer1_IRQn, 10);
-	//NVIC_SetPriority(ACE_PC0_Flag0_IRQn, 9);
+	NVIC_SetPriority(Timer1_IRQn, 10);
+	NVIC_SetPriority(ACE_PC0_Flag0_IRQn, 9);
 
 	//Important stuff
-	printf("test\n"); // test UART0
+	//printf("test\n"); // test UART0
 	Channel_init(channels);
+	VGA_init();
 	test_library();
 
 

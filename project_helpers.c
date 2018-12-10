@@ -306,6 +306,9 @@ void charDisplayData(struct Loop_Master* loopIn, struct channel* channelPtrs[NUM
 	display[1][17] = ' ';
 	display[1][18] = ' ';
 	display[1][19] = channelPtrs[loopIn->selectedChannel]->button;
+	if(display[1][19] == 0) {
+		display[1][19] = '0';
+	}
 
 
 	// set distance line
@@ -449,6 +452,7 @@ uint16_t getY() {
 }
 
 int checkPress(struct Loop_Master* loopIn) {
+
 	int count =0;
 	int i =0;
 	while(i<11){
@@ -463,7 +467,39 @@ int checkPress(struct Loop_Master* loopIn) {
 			count++;
 		i+=2;
 	}
-	return count>5;
+	return count>1;
+
+	/*
+	uint16_t x = getX();
+	uint16_t y = getY();
+	uint8_t buttonX = -1;
+	uint8_t buttonY = -1;
+
+
+	if(x >= 2650) {
+		buttonX = 0;
+	} else if(x >= 1850 && x <= 2550) {
+		buttonX = 1;
+	} else if(x >= 940 && x <= 1600) {
+		buttonX = 2;
+	} else if(x <= 800) {
+		buttonX = 3;
+	}
+
+	if(y >= 2540) {
+		buttonY = 0;
+	} else if(y >= 1800 && y <= 2400) {
+		buttonY = 1;
+	} else if(y >= 1000 && y <= 1600) {
+		buttonY = 2;
+	} else if(y <= 850) {
+		buttonY = 3;
+	}
+
+	uint8_t buttonPressed = (buttonY * 4) + buttonX;
+	if(buttonX == -1 || buttonY == -1) {
+		return
+	}*/
 }
 
 void parseTouch(struct Loop_Master* loopIn) {
@@ -504,30 +540,30 @@ void readTouch(struct Loop_Master* loopIn) {
 	int y =loopIn->touchscreenBuffer[1];
 	int xSection = -1;
 	int ySection = -1;
-	if(x > 2600){
+	if(x > 2650){
 		xSection = 0;
 	}
-	else if(x < 2500 && x > 1900){
+	else if(x < 2550 && x > 1850){
 		xSection = 1;
 	}
 						// was 1100
-	else if(x < 1700 && x > 1100){
+	else if(x < 1600 && x > 940){
 		xSection = 2;
 	}
-	else if(x < 1000){
+	else if(x < 800){
 		xSection = 3;
 	}
 
-	if(y > 2450){
+	if(y > 2540){
 		ySection = 0;
 	}
-	else if(y < 2400 && y > 1750){
+	else if(y < 2400 && y > 1800){
 		ySection = 1;
 	}
-	else if(y < 1650 && y > 1100){
+	else if(y < 1600 && y > 1000){
 		ySection = 2;
 	}
-	else if(y < 1000){
+	else if(y < 850){
 		ySection = 3;
 	}
 
